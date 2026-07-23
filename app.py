@@ -15,6 +15,9 @@ from flask import Flask, render_template, request, jsonify
 from dotenv import load_dotenv
 import requests
 
+# Harness引擎
+from harness_engine import run_pipeline
+
 # 加载环境变量
 load_dotenv()
 
@@ -653,6 +656,78 @@ def list_scripts():
                     "count": len(files),
                 })
     return jsonify(folders)
+
+
+@app.route("/generate_harness", methods=["POST"])
+def generate_harness():
+    """Harness流水线路由：6步顺序生成，每步有校验和重试。"""
+    data = request.get_json()
+
+    genre_key = data.get("genre", "campus_fantasy")
+    user_idea = data.get("idea", "").strip()
+    episode_count = int(data.get("episodes", 5))
+    art_style = data.get("art_style", "ghibli")
+    img_platform = data.get("img_platform", "jimeng")
+    vid_platform = data.get("vid_platform", "jimeng_video")
+
+    if not user_idea:
+        return jsonify({"error": "创意描述不能为空"}), 400
+    if genre_key not in GENRE_MAP:
+        return jsonify({"error": f"无效的主题类型: {genre_key}"}), 400
+    if episode_count < 1 or episode_count > 10:
+        return jsonify({"error": "集数必须在1-10之间"}), 400
+
+    genre_cn = GENRE_MAP[genre_key]
+
+    # 获取画风数据
+    art_styles = {
+        "ghibli": {"desc": "Studio Ghibli style, soft watercolor, warm nostalgic lighting, hand-drawn feel", "negative": "photorealistic, 3D render, harsh shadows, dark, scary"},
+        "shinkai": {"desc": "Makoto Shinkai style, photorealistic lighting, vibrant skies, detailed backgrounds, lens flare", "negative": "cartoon, flat colors, simple shapes, low detail, blurry"},
+        "cyberpunk": {"desc": "Cyberpunk style, neon purple and cyan lights, dark rainy cityscapes, holographic UIs", "negative": "bright daylight, natural landscape, rural, vintage, pastel"},
+        "guofeng": {"desc": "Chinese ink wash painting, flowing brushstrokes, ethereal mist, classic elegance", "negative": "western style, neon, futuristic, modern architecture, 3D render"},
+        "anime": {"desc": "Japanese anime style, cel-shading, vibrant colors, large eyes, dynamic poses", "negative": "realistic, 3D, photograph, blurry, western cartoon"},
+        "webtoon": {"desc": "Korean webtoon style, tall proportions, soft gradients, glossy hair, digital painting", "negative": "chibi, cartoon, 3D, rough sketch, traditional media"},
+        "disney": {"desc": "Disney/Pixar 3D animation, exaggerated expressions, smooth forms, vibrant colors", "negative": "anime, flat 2D, realistic, horror, gritty, dark shadows"},
+        "cinematic": {"desc": "Cinematic realism, photorealistic textures, dramatic lighting, film grain, lens flares", "negative": "cartoon, anime, flat, low poly, low quality, painting"},
+        "pixel": {"desc": "Pixel art style, crisp pixels, limited palette, retro 8-bit/16-bit, dithering", "negative": "smooth, realistic, photorealistic, high resolution, blurry"},
+        "picturebook": {"desc": "Picture book illustration, soft pastels, gentle shapes, cozy lighting, watercolor texture", "negative": "dark, scary, realistic, sharp angles, neon, cyberpunk"},
+    }
+    art_data = art_styles.get(art_style, art_styles["ghibli"])
+
+    try:
+        result = run_pipeline(
+            genre_cn=genre_cn,
+            idea=user_idea,
+            episode_count=episode_count,
+            art_style=art_style,
+            art_data=art_data,
+            img_platform=img_platform,
+            vid_platform=vid_platform,
+            api_key=DEEPSEEK_API_KEY,
+            api_base=DEEPSEEK_API_BASE,
+        )
+
+        if not result.get("success"):
+            return jsonify({"error": result.get("error", "流水线执行失败")}), 500
+
+        modules = result["modules"]
+
+        # 保存文件
+        keyword = user_idea[:20].replace(" ", "_").replace("/", "_")
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        folder_name = f"{genre_cn}_{keyword}_{timestamp}"
+        save_path = save_modules(modules, folder_name)
+
+        return jsonify({
+            "success": True,
+            "folder": folder_name,
+            "path": save_path,
+            "modules": modules,
+            "pipeline": "harness",
+        })
+
+    except Exception as e:
+        return jsonify({"error": f"Harness流水线错误: {str(e)}"}), 500
 
 
 if __name__ == "__main__":
