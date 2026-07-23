@@ -172,6 +172,38 @@
                   </select>
                 </div>
               </div>
+              <div class="config-row">
+                <div class="config-item config-item-wide">
+                  <label data-i18n="config_img_platforms">🖼️ 图像生成平台</label>
+                  <div class="platform-chips" id="imgPlatforms">
+                    <label class="chip selected" data-platform="jimeng">
+                      <input type="checkbox" name="imgPlatform" value="jimeng" checked> 即梦/Flux
+                    </label>
+                    <label class="chip" data-platform="midjourney">
+                      <input type="checkbox" name="imgPlatform" value="midjourney"> Midjourney
+                    </label>
+                    <label class="chip" data-platform="happyhorse">
+                      <input type="checkbox" name="imgPlatform" value="happyhorse"> HappyHorse
+                    </label>
+                  </div>
+                </div>
+              </div>
+              <div class="config-row">
+                <div class="config-item config-item-wide">
+                  <label data-i18n="config_vid_platforms">🎬 视频生成平台</label>
+                  <div class="platform-chips" id="vidPlatforms">
+                    <label class="chip selected" data-platform="pika">
+                      <input type="checkbox" name="vidPlatform" value="pika" checked> Pika/PixVerse
+                    </label>
+                    <label class="chip selected" data-platform="kling">
+                      <input type="checkbox" name="vidPlatform" value="kling" checked> Kling/可灵
+                    </label>
+                    <label class="chip" data-platform="hailuo">
+                      <input type="checkbox" name="vidPlatform" value="hailuo"> Hailuo/海螺
+                    </label>
+                  </div>
+                </div>
+              </div>
               <button class="btn-generate" id="btnGenerate" onclick="startGeneration()">
                 <span class="btn-icon">✨</span>
                 <span data-i18n="btn_generate">生成剧本</span>

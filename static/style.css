@@ -499,6 +499,50 @@ body {
   color: var(--text-dark);
 }
 
+/* === Platform Chips === */
+.platform-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border: 2px dashed var(--sakura);
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-medium);
+  cursor: pointer;
+  transition: var(--transition);
+  background: var(--white-pure);
+  user-select: none;
+}
+
+.chip:hover {
+  border-color: var(--strawberry);
+  background: #FFF5F8;
+}
+
+.chip.selected {
+  border-color: var(--strawberry);
+  border-style: solid;
+  background: linear-gradient(135deg, #FFF0F3, #FFF5F8);
+  color: var(--strawberry);
+  box-shadow: var(--shadow-sm);
+}
+
+.chip input[type="checkbox"] {
+  display: none;
+}
+
+.config-item-wide {
+  flex: 1;
+}
+
 #artStyle {
   padding: 8px 14px;
   border: 2px solid var(--sakura);

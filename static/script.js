@@ -166,6 +166,7 @@ let currentTab = null;
 document.addEventListener('DOMContentLoaded', () => {
   initParticles();
   initGenreSelection();
+  initPlatformChips();
   updateLangUI();
   // 点击其他区域关闭语言菜单
   document.addEventListener('click', (e) => {
@@ -290,7 +291,29 @@ function initGenreSelection() {
   });
 }
 
-// ===== 集数调节 =====
+// ===== 平台选择 =====
+function initPlatformChips() {
+  document.querySelectorAll('.platform-chips .chip').forEach(chip => {
+    chip.addEventListener('click', function(e) {
+      e.preventDefault();
+      this.classList.toggle('selected');
+      const checkbox = this.querySelector('input[type="checkbox"]');
+      checkbox.checked = this.classList.contains('selected');
+    });
+  });
+}
+
+function getSelectedPlatforms() {
+  const imgPlatforms = [];
+  document.querySelectorAll('#imgPlatforms .chip.selected input').forEach(cb => {
+    imgPlatforms.push(cb.value);
+  });
+  const vidPlatforms = [];
+  document.querySelectorAll('#vidPlatforms .chip.selected input').forEach(cb => {
+    vidPlatforms.push(cb.value);
+  });
+  return { imgPlatforms, vidPlatforms };
+}
 function stepEpisode(delta) {
   episodeCount = Math.max(1, Math.min(10, episodeCount + delta));
   document.getElementById('episodeCount').textContent = episodeCount;
@@ -350,6 +373,9 @@ async function startGeneration() {
   const artStyle = document.getElementById('artStyle').value;
   const episodes = episodeCount;
 
+  // 获取选中平台
+  const platforms = getSelectedPlatforms();
+
   // 切换到生成面板
   navigateTo('generating');
   resetProgressUI();
@@ -366,6 +392,8 @@ async function startGeneration() {
         idea: idea,
         episodes: episodes,
         art_style: artStyle,
+        img_platforms: platforms.imgPlatforms,
+        vid_platforms: platforms.vidPlatforms,
       }),
     });
 
