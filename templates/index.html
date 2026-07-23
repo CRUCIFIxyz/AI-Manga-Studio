@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Manga Script Generator | AI漫剧剧本生成器</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- 背景粒子Canvas -->
+  <canvas id="particleCanvas"></canvas>
+
+  <!-- 语言切换按钮 -->
+  <div class="lang-toggle" id="langToggle">
+    <button class="lang-btn" onclick="toggleLangMenu()" data-i18n-title="switch_language">
+      <span class="lang-icon">🌐</span>
+      <span class="lang-label" id="currentLangLabel">简</span>
+      <svg class="lang-chevron" width="12" height="12" viewBox="0 0 12 12"><path d="M3 5l3 3 3-3" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
+    </button>
+    <div class="lang-menu" id="langMenu">
+      <div class="lang-option active" data-lang="zh" onclick="switchLang('zh')">
+        <span class="lang-flag">🇨🇳</span>
+        <span>简体中文</span>
+        <span class="lang-check">✓</span>
+      </div>
+      <div class="lang-option" data-lang="en" onclick="switchLang('en')">
+        <span class="lang-flag">🇺🇸</span>
+        <span>English</span>
+        <span class="lang-check">✓</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 主布局 -->
+  <div class="app-container">
+    <!-- 左侧边栏 -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-icon">🎬</div>
+        <div class="brand-text">
+          <span class="brand-name" data-i18n="brand_name">AI漫剧工坊</span>
+          <span class="brand-sub" data-i18n="brand_sub">剧本生成器 MVP</span>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section-label" data-i18n="nav_workflow">创作流程</div>
+        <a class="nav-item active" data-step="input" onclick="navigateTo('input')">
+          <span class="nav-icon">📝</span>
+          <span class="nav-text" data-i18n="nav_input">填入创意</span>
+          <span class="nav-badge nav-badge-active">1</span>
+        </a>
+        <a class="nav-item" data-step="generating" onclick="navigateTo('generating')">
+          <span class="nav-icon">⚡</span>
+          <span class="nav-text" data-i18n="nav_generating">AI生成中</span>
+          <span class="nav-badge">2</span>
+        </a>
+        <a class="nav-item" data-step="result" onclick="navigateTo('result')">
+          <span class="nav-icon">📋</span>
+          <span class="nav-text" data-i18n="nav_result">查看结果</span>
+          <span class="nav-badge">3</span>
+        </a>
+
+        <div class="nav-section-label" data-i18n="nav_history" style="margin-top:16px;">历史记录</div>
+        <a class="nav-item" onclick="loadHistory()">
+          <span class="nav-icon">📂</span>
+          <span class="nav-text" data-i18n="nav_history_btn">已生成剧本</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="footer-card">
+          <div class="footer-card-icon">💡</div>
+          <p data-i18n="footer_tip">生成的AI提示词可直接用于即梦、Pika等工具</p>
+        </div>
+      </div>
+    </aside>
+
+    <!-- 主内容区 -->
+    <main class="main-content" id="mainContent">
+      <!-- 输入面板 -->
+      <section class="panel panel-input active" id="panelInput">
+        <div class="panel-header">
+          <h1 class="panel-title" data-i18n="panel_input_title">开始创作你的AI漫剧</h1>
+          <p class="panel-subtitle" data-i18n="panel_input_subtitle">填入想法，AI自动生成完整剧本包——大纲、人设、台词、分镜、提示词一应俱全</p>
+        </div>
+
+        <div class="cards-row">
+          <!-- 主题选择卡片 -->
+          <div class="card card-genre">
+            <div class="card-header">
+              <span class="card-icon">🎭</span>
+              <h3 data-i18n="card_genre_title">选择题材</h3>
+            </div>
+            <div class="card-body">
+              <div class="genre-grid" id="genreGrid">
+                <label class="genre-item selected" data-genre="campus_fantasy">
+                  <input type="radio" name="genre" value="campus_fantasy" checked>
+                  <span class="genre-emoji">🏫</span>
+                  <span class="genre-name" data-i18n="genre_campus">校园奇幻</span>
+                </label>
+                <label class="genre-item" data-genre="urban_revenge">
+                  <input type="radio" name="genre" value="urban_revenge">
+                  <span class="genre-emoji">🏙️</span>
+                  <span class="genre-name" data-i18n="genre_urban">都市逆袭</span>
+                </label>
+                <label class="genre-item" data-genre="xianxia">
+                  <input type="radio" name="genre" value="xianxia">
+                  <span class="genre-emoji">🗡️</span>
+                  <span class="genre-name" data-i18n="genre_xianxia">古风仙侠</span>
+                </label>
+                <label class="genre-item" data-genre="sci_fi">
+                  <input type="radio" name="genre" value="sci_fi">
+                  <span class="genre-emoji">🤖</span>
+                  <span class="genre-name" data-i18n="genre_scifi">科幻末世</span>
+                </label>
+                <label class="genre-item" data-genre="mystery">
+                  <input type="radio" name="genre" value="mystery">
+                  <span class="genre-emoji">🔍</span>
+                  <span class="genre-name" data-i18n="genre_mystery">悬疑推理</span>
+                </label>
+                <label class="genre-item" data-genre="romance">
+                  <input type="radio" name="genre" value="romance">
+                  <span class="genre-emoji">💕</span>
+                  <span class="genre-name" data-i18n="genre_romance">甜宠现言</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- 创意输入卡片 -->
+          <div class="card card-idea">
+            <div class="card-header">
+              <span class="card-icon">✏️</span>
+              <h3 data-i18n="card_idea_title">描述你的创意</h3>
+            </div>
+            <div class="card-body">
+              <textarea id="ideaInput" data-i18n-placeholder="idea_placeholder" placeholder="例如：一只会说话的猫在魔法学院里揭开了地下王国的秘密，却发现自己是千年前被封印的守护灵...&#10;&#10;输入关键词即可：主题 / 主角特征 / 世界观 / 核心冲突"></textarea>
+              <div class="idea-hints">
+                <span class="hint-tag" onclick="fillHint('一只会说话的猫在魔法学院')" data-i18n="hint1">🐱 会说话的猫</span>
+                <span class="hint-tag" onclick="fillHint('重生回到高中时代逆袭')" data-i18n="hint2">🔄 重生逆袭</span>
+                <span class="hint-tag" onclick="fillHint('机甲少女在末世废土寻找希望')" data-i18n="hint3">⚔️ 机甲末世</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 配置卡片 -->
+          <div class="card card-config">
+            <div class="card-header">
+              <span class="card-icon">⚙️</span>
+              <h3 data-i18n="card_config_title">生成配置</h3>
+            </div>
+            <div class="card-body">
+              <div class="config-row">
+                <div class="config-item">
+                  <label data-i18n="config_episodes">集数</label>
+                  <div class="stepper">
+                    <button onclick="stepEpisode(-1)" aria-label="减少集数">−</button>
+                    <span id="episodeCount">5</span>
+                    <button onclick="stepEpisode(1)" aria-label="增加集数">+</button>
+                  </div>
+                </div>
+                <div class="config-item">
+                  <label data-i18n="config_style">画风偏好</label>
+                  <select id="artStyle">
+                    <option value="ghibli">🎨 吉卜力 (Ghibli)</option>
+                    <option value="shinkai">🌅 新海诚 (Shinkai)</option>
+                    <option value="cyberpunk">🌃 赛博朋克 (Cyberpunk)</option>
+                    <option value="guofeng">🏮 国漫古风 (Guofeng)</option>
+                  </select>
+                </div>
+              </div>
+              <button class="btn-generate" id="btnGenerate" onclick="startGeneration()">
+                <span class="btn-icon">✨</span>
+                <span data-i18n="btn_generate">生成剧本</span>
+                <span class="btn-sparkle"></span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 生成中面板 -->
+      <section class="panel panel-generating" id="panelGenerating">
+        <div class="generating-container">
+          <div class="generating-header">
+            <div class="generating-spinner">
+              <div class="spinner-ring"></div>
+              <div class="spinner-core">🎬</div>
+            </div>
+            <h2 data-i18n="gen_title">AI正在为你创作剧本...</h2>
+            <p id="genStatus" data-i18n="gen_status">正在调用DeepSeek大模型，预计需要30-60秒</p>
+          </div>
+
+          <!-- 流光进度条 -->
+          <div class="progress-track">
+            <div class="progress-fill" id="progressFill">
+              <div class="progress-shimmer"></div>
+            </div>
+          </div>
+          <div class="progress-percent" id="progressPercent">0%</div>
+
+          <!-- 步骤节点 -->
+          <div class="steps-grid" id="stepsGrid">
+            <div class="step-node" data-step="1">
+              <div class="step-dot"></div>
+              <span data-i18n="step_outline">① 剧本大纲</span>
+            </div>
+            <div class="step-node" data-step="2">
+              <div class="step-dot"></div>
+              <span data-i18n="step_characters">② 角色设定</span>
+            </div>
+            <div class="step-node" data-step="3">
+              <div class="step-dot"></div>
+              <span data-i18n="step_scenes">③ 场景描述</span>
+            </div>
+            <div class="step-node" data-step="4">
+              <div class="step-dot"></div>
+              <span data-i18n="step_dialogue">④ 分集台词</span>
+            </div>
+            <div class="step-node" data-step="5">
+              <div class="step-dot"></div>
+              <span data-i18n="step_storyboard">⑤ 分镜脚本</span>
+            </div>
+            <div class="step-node" data-step="6">
+              <div class="step-dot"></div>
+              <span data-i18n="step_prompts">⑥ AI提示词</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 结果面板 -->
+      <section class="panel panel-result" id="panelResult">
+        <div class="result-header">
+          <div>
+            <h2 data-i18n="result_title">🎉 剧本生成完成</h2>
+            <p id="resultInfo" data-i18n="result_info">已保存到输出文件夹</p>
+          </div>
+          <div class="result-actions">
+            <button class="btn-action btn-secondary" onclick="copyAll()">
+              <span>📋</span> <span data-i18n="btn_copy_all">复制全部</span>
+            </button>
+            <button class="btn-action btn-secondary" onclick="downloadAll()">
+              <span>📥</span> <span data-i18n="btn_download">下载Markdown</span>
+            </button>
+            <button class="btn-action btn-primary" onclick="resetToInput()">
+              <span>🔄</span> <span data-i18n="btn_new">新建剧本</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 模块Tab -->
+        <div class="tabs-container" id="tabsContainer">
+          <div class="tabs-scroll">
+            <button class="tab active" data-tab="01_剧本大纲" onclick="switchTab('01_剧本大纲')">
+              <span class="tab-num">①</span> <span data-i18n="tab_outline">剧本大纲</span>
+            </button>
+            <button class="tab" data-tab="02_角色设定" onclick="switchTab('02_角色设定')">
+              <span class="tab-num">②</span> <span data-i18n="tab_characters">角色设定</span>
+            </button>
+            <button class="tab" data-tab="03_场景描述" onclick="switchTab('03_场景描述')">
+              <span class="tab-num">③</span> <span data-i18n="tab_scenes">场景描述</span>
+            </button>
+            <button class="tab" data-tab="04_分集台词" onclick="switchTab('04_分集台词')">
+              <span class="tab-num">④</span> <span data-i18n="tab_dialogue">分集台词</span>
+            </button>
+            <button class="tab" data-tab="05_分镜脚本" onclick="switchTab('05_分镜脚本')">
+              <span class="tab-num">⑤</span> <span data-i18n="tab_storyboard">分镜脚本</span>
+            </button>
+            <button class="tab" data-tab="06_AI提示词" onclick="switchTab('06_AI提示词')">
+              <span class="tab-num">⑥</span> <span data-i18n="tab_prompts">AI提示词</span>
+            </button>
+          </div>
+          <div class="tab-indicator" id="tabIndicator"></div>
+        </div>
+
+        <!-- 内容展示区 -->
+        <div class="content-area" id="contentArea">
+          <div class="content-placeholder" id="contentPlaceholder">
+            <div class="placeholder-icon">📄</div>
+            <p data-i18n="placeholder_text">点击上方Tab查看对应模块内容</p>
+          </div>
+          <div class="content-render markdown-body" id="contentRender" style="display:none;"></div>
+        </div>
+      </section>
+
+      <!-- 历史面板 -->
+      <section class="panel panel-history" id="panelHistory">
+        <div class="panel-header">
+          <h2 data-i18n="history_title">📂 已生成剧本</h2>
+          <button class="btn-back" onclick="navigateTo('input')">
+            <span>←</span> <span data-i18n="btn_back">返回创作</span>
+          </button>
+        </div>
+        <div class="history-list" id="historyList">
+          <p class="history-empty" data-i18n="history_empty">暂无历史记录</p>
+        </div>
+      </section>
+    </main>
+
+    <!-- 右侧状态面板 -->
+    <aside class="status-panel" id="statusPanel">
+      <div class="status-card" id="statusCardInput">
+        <div class="status-card-header">
+          <span class="status-icon">📊</span>
+          <h4 data-i18n="status_quick_stats">快捷统计</h4>
+        </div>
+        <div class="status-metrics">
+          <div class="metric">
+            <span class="metric-label" data-i18n="metric_modules">生成模块</span>
+            <span class="metric-value">6</span>
+          </div>
+          <div class="metric">
+            <span class="metric-label" data-i18n="metric_format">输出格式</span>
+            <span class="metric-value">Markdown</span>
+          </div>
+          <div class="metric">
+            <span class="metric-label" data-i18n="metric_api">AI模型</span>
+            <span class="metric-value">DeepSeek</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="status-card" id="statusCardProgress" style="display:none;">
+        <div class="status-card-header">
+          <span class="status-icon pulse">⏳</span>
+          <h4 data-i18n="status_progress">生成进度</h4>
+        </div>
+        <div class="status-checklist" id="statusChecklist">
+          <div class="check-item" data-check="1"><span class="check-icon">○</span> <span data-i18n="check_outline">剧本大纲</span></div>
+          <div class="check-item" data-check="2"><span class="check-icon">○</span> <span data-i18n="check_characters">角色设定</span></div>
+          <div class="check-item" data-check="3"><span class="check-icon">○</span> <span data-i18n="check_scenes">场景描述</span></div>
+          <div class="check-item" data-check="4"><span class="check-icon">○</span> <span data-i18n="check_dialogue">分集台词</span></div>
+          <div class="check-item" data-check="5"><span class="check-icon">○</span> <span data-i18n="check_storyboard">分镜脚本</span></div>
+          <div class="check-item" data-check="6"><span class="check-icon">○</span> <span data-i18n="check_prompts">AI提示词</span></div>
+        </div>
+      </div>
+
+      <div class="status-card" id="statusCardResult" style="display:none;">
+        <div class="status-card-header">
+          <span class="status-icon">✅</span>
+          <h4 data-i18n="status_actions">快捷操作</h4>
+        </div>
+        <div class="quick-actions">
+          <button class="qa-btn" onclick="copyModule('06_AI提示词')">
+            <span>🎨</span> <span data-i18n="qa_copy_prompts">复制AI提示词</span>
+          </button>
+          <button class="qa-btn" onclick="copyModule('05_分镜脚本')">
+            <span>🎬</span> <span data-i18n="qa_copy_storyboard">复制分镜脚本</span>
+          </button>
+          <button class="qa-btn" onclick="copyModule('01_剧本大纲')">
+            <span>📖</span> <span data-i18n="qa_copy_outline">复制剧本大纲</span>
+          </button>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Toast提示 -->
+  <div class="toast" id="toast"></div>
+
+  <script src="/static/script.js"></script>
+</body>
+</html>
