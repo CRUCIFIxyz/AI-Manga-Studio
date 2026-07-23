@@ -166,7 +166,6 @@ let currentTab = null;
 document.addEventListener('DOMContentLoaded', () => {
   initParticles();
   initGenreSelection();
-  initPlatformChips();
   updateLangUI();
   // 点击其他区域关闭语言菜单
   document.addEventListener('click', (e) => {
@@ -291,29 +290,58 @@ function initGenreSelection() {
   });
 }
 
-// ===== 平台选择 =====
-function initPlatformChips() {
-  document.querySelectorAll('.platform-chips .chip').forEach(chip => {
-    chip.addEventListener('click', function(e) {
-      e.preventDefault();
-      this.classList.toggle('selected');
-      const checkbox = this.querySelector('input[type="checkbox"]');
-      checkbox.checked = this.classList.contains('selected');
-    });
+// ===== 下拉面板（平台选择）=====
+function toggleDropdown(id) {
+  const panel = document.getElementById(id);
+  panel.classList.toggle('open');
+}
+
+function updateDropdownLabel(id) {
+  const panel = document.getElementById(id);
+  const label = panel.querySelector('[id$="Label"]');
+  const checkboxes = panel.querySelectorAll('input[type="checkbox"]:checked');
+  const names = Array.from(checkboxes).map(cb => {
+    const text = cb.parentElement.textContent.trim();
+    // 截取平台简称
+    if (text.includes('即梦')) return '即梦';
+    if (text.includes('Flux')) return 'Flux';
+    if (text.includes('Midjourney')) return 'Midjourney';
+    if (text.includes('HappyHorse')) return 'HappyHorse';
+    if (text.includes('Stable')) return 'SD';
+    if (text.includes('Pika')) return 'Pika';
+    if (text.includes('PixVerse')) return 'PixVerse';
+    if (text.includes('Kling') || text.includes('可灵')) return 'Kling';
+    if (text.includes('Hailuo') || text.includes('海螺')) return 'Hailuo';
+    if (text.includes('Runway')) return 'Runway';
+    return text.slice(0, 8);
+  });
+  label.textContent = names.length > 0 ? names.join(' · ') : '未选择';
+  
+  // 更新选中样式
+  panel.querySelectorAll('.dd-option').forEach(opt => {
+    const cb = opt.querySelector('input[type="checkbox"]');
+    opt.classList.toggle('selected', cb.checked);
   });
 }
 
 function getSelectedPlatforms() {
   const imgPlatforms = [];
-  document.querySelectorAll('#imgPlatforms .chip.selected input').forEach(cb => {
+  document.querySelectorAll('#imgPlatformDropdown input[name="imgPlatform"]:checked').forEach(cb => {
     imgPlatforms.push(cb.value);
   });
   const vidPlatforms = [];
-  document.querySelectorAll('#vidPlatforms .chip.selected input').forEach(cb => {
+  document.querySelectorAll('#vidPlatformDropdown input[name="vidPlatform"]:checked').forEach(cb => {
     vidPlatforms.push(cb.value);
   });
   return { imgPlatforms, vidPlatforms };
 }
+
+// 点击外部关闭下拉
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.dropdown-panel')) {
+    document.querySelectorAll('.dropdown-panel.open').forEach(p => p.classList.remove('open'));
+  }
+});
 function stepEpisode(delta) {
   episodeCount = Math.max(1, Math.min(10, episodeCount + delta));
   document.getElementById('episodeCount').textContent = episodeCount;

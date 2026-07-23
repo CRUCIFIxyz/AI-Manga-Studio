@@ -56,20 +56,54 @@ def build_system_prompt(
     """
     art_styles = {
         "ghibli": {
+            "name_cn": "吉卜力",
             "desc": "Studio Ghibli style, soft watercolor texture, warm nostalgic lighting, hand-drawn feel, gentle colors, dreamy atmosphere",
             "negative": "photorealistic, 3D render, harsh shadows, dark, scary, low quality",
         },
         "shinkai": {
+            "name_cn": "新海诚",
             "desc": "Makoto Shinkai style, photorealistic lighting, vibrant skies, detailed backgrounds, lens flare, cinematic color grading",
             "negative": "cartoon, flat colors, simple shapes, low detail, blurry",
         },
         "cyberpunk": {
+            "name_cn": "赛博朋克",
             "desc": "Cyberpunk style, neon purple and cyan lights, dark rainy cityscapes, holographic UIs, chrome surfaces, volumetric fog, noir lighting",
             "negative": "bright daylight, natural landscape, rural, vintage, pastel, low contrast",
         },
         "guofeng": {
+            "name_cn": "国风古韵",
             "desc": "Chinese ink wash painting (国风), flowing brushstrokes, ethereal mist, muted earth tones, classic elegance, silk textures",
             "negative": "western style, neon, futuristic, cyber, modern architecture, 3D render",
+        },
+        "anime": {
+            "name_cn": "日系二次元",
+            "desc": "Japanese anime style, clean cel-shading, vibrant saturated colors, large expressive eyes, dynamic poses, speed lines, screen tones, 2D animation aesthetic",
+            "negative": "realistic, 3D, photograph, blurry, western cartoon style, low saturation",
+        },
+        "webtoon": {
+            "name_cn": "韩系漫画",
+            "desc": "Korean webtoon/manhwa style, tall slender proportions, soft gradient coloring, glossy hair, fashionable outfits, romantic atmosphere, digital painting finish",
+            "negative": "chibi, cartoon, 3D, rough sketch, traditional media, low detail",
+        },
+        "disney": {
+            "name_cn": "美式卡通",
+            "desc": "Disney/Pixar 3D animation style, exaggerated expressions, smooth rounded forms, vibrant colors, squash-and-stretch motion, family-friendly appeal, high-quality CG render",
+            "negative": "anime, flat 2D, realistic, horror, gritty, dark shadows, cel-shading",
+        },
+        "cinematic": {
+            "name_cn": "写实电影感",
+            "desc": "Cinematic realism, photorealistic textures, dramatic lighting with strong shadows, film grain, anamorphic lens flares, shallow depth of field, Hollywood blockbuster look",
+            "negative": "cartoon, anime, flat, low poly, low quality, oversaturated, painting",
+        },
+        "pixel": {
+            "name_cn": "像素复古",
+            "desc": "Pixel art game style, crisp defined pixels, limited color palette, retro 8-bit/16-bit aesthetic, dithering, nostalgic video game feel, chunky character sprites",
+            "negative": "smooth, realistic, photorealistic, high resolution, blurry, gradient, vector",
+        },
+        "picturebook": {
+            "name_cn": "治愈绘本",
+            "desc": "Children's picture book illustration style, soft pastel colors, gentle rounded shapes, cozy warm lighting, storybook charm, crayon or watercolor texture, whimsical details",
+            "negative": "dark, scary, realistic, sharp angles, neon, cyberpunk, photorealistic, harsh shadows",
         },
     }
     art = art_styles.get(art_style, art_styles["ghibli"])
@@ -282,6 +316,67 @@ For each shot, output:
 Camera: [Specify: static / pan left / pan right / zoom in / zoom out / tracking shot]
 Duration: 8-12 seconds
 ```
+
+Provide at least 3 prompts labeled by shot number.""")
+
+    if "jimeng_video" in vid_platforms:
+        sections.append(f"""### Jimeng / 即梦 (Image-to-Video)
+
+Jimeng supports image-to-video with motion control. Use uploaded reference images from Modules 02/03.
+
+For each shot, output:
+```
+Reference images: [Character reference from Module 02] + [Scene reference from Module 03]
+Action: [Describe the motion: character walks, turns, gestures, camera pans or zooms]
+Style: {art_desc}, cinematic lighting, smooth motion, 8K quality
+Motion strength: [Specify 1-10, where 5=natural movement, 8=dynamic action]
+Duration: 4-8 seconds
+```
+
+Key: Jimeng works best with clear reference images and moderate motion strength (5-7). Avoid extreme motion that causes distortion.
+
+Provide at least 3 prompts labeled by shot number.""")
+
+    if "happyhorse_video" in vid_platforms:
+        sections.append(f"""### HappyHorse (Image-to-Video)
+
+HappyHorse supports element composition: upload images, combine elements, define interactions.
+
+For each shot, output:
+```
+Element 1: [Character image reference from Module 02]
+Element 2: [Scene background from Module 03]
+Element 3+: [Key props or secondary characters]
+Interaction: [How elements interact — e.g., "the character walks from left to right through the scene, leaves rustle as she passes"]
+Style: {art_desc}, cohesive lighting, 8K
+Animation type: [Full motion / Partial motion / Camera only]
+Duration: 6-12 seconds
+```
+
+Key: HappyHorse excels at compositing separate elements into a cohesive scene. Always specify which elements move and which stay static.
+
+Provide at least 3 prompts labeled by shot number.""")
+
+    if "runway" in vid_platforms:
+        sections.append(f"""### Runway Gen-3 (Image-to-Video / Text-to-Video)
+
+Runway supports both keyframe-based and text-based video generation with Motion Brush control.
+
+For each shot, output:
+```
+Prompt: [Character from 02] in [Scene from 03], [Detailed action description], {art_desc}, cinematic lighting, film grain, 24fps
+
+Motion Brush areas:
+- Region 1 (face/head area): [subtle micro-movements]
+- Region 2 (body/clothing): [natural sway/breeze effect]
+- Region 3 (background elements): [describe movement — clouds drift, leaves fall, water ripples]
+
+Camera: [Static / Slow pan / Gentle zoom]
+Style Preset: Cinematic
+Duration: 4-10 seconds
+```
+
+Key: Runway's Motion Brush allows selective animation of specific regions. Always specify which areas should move and how.
 
 Provide at least 3 prompts labeled by shot number.""")
 
