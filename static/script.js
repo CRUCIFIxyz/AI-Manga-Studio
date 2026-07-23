@@ -290,7 +290,7 @@ function initGenreSelection() {
   });
 }
 
-// ===== 下拉面板（平台选择）=====
+// ===== 下拉面板（平台单选）=====
 function toggleDropdown(id) {
   const panel = document.getElementById(id);
   panel.classList.toggle('open');
@@ -299,41 +299,29 @@ function toggleDropdown(id) {
 function updateDropdownLabel(id) {
   const panel = document.getElementById(id);
   const label = panel.querySelector('[id$="Label"]');
-  const checkboxes = panel.querySelectorAll('input[type="checkbox"]:checked');
-  const names = Array.from(checkboxes).map(cb => {
-    const text = cb.parentElement.textContent.trim();
-    // 截取平台简称
-    if (text.includes('即梦')) return '即梦';
-    if (text.includes('Flux')) return 'Flux';
-    if (text.includes('Midjourney')) return 'Midjourney';
-    if (text.includes('HappyHorse')) return 'HappyHorse';
-    if (text.includes('Stable')) return 'SD';
-    if (text.includes('Pika')) return 'Pika';
-    if (text.includes('PixVerse')) return 'PixVerse';
-    if (text.includes('Kling') || text.includes('可灵')) return 'Kling';
-    if (text.includes('Hailuo') || text.includes('海螺')) return 'Hailuo';
-    if (text.includes('Runway')) return 'Runway';
-    return text.slice(0, 8);
-  });
-  label.textContent = names.length > 0 ? names.join(' · ') : '未选择';
+  const selected = panel.querySelector('input[type="radio"]:checked');
+  if (selected) {
+    const text = selected.parentElement.textContent.trim();
+    label.textContent = text;
+  }
   
   // 更新选中样式
   panel.querySelectorAll('.dd-option').forEach(opt => {
-    const cb = opt.querySelector('input[type="checkbox"]');
-    opt.classList.toggle('selected', cb.checked);
+    const radio = opt.querySelector('input[type="radio"]');
+    opt.classList.toggle('selected', radio.checked);
   });
+  
+  // 选中后自动关闭下拉
+  setTimeout(() => panel.classList.remove('open'), 150);
 }
 
 function getSelectedPlatforms() {
-  const imgPlatforms = [];
-  document.querySelectorAll('#imgPlatformDropdown input[name="imgPlatform"]:checked').forEach(cb => {
-    imgPlatforms.push(cb.value);
-  });
-  const vidPlatforms = [];
-  document.querySelectorAll('#vidPlatformDropdown input[name="vidPlatform"]:checked').forEach(cb => {
-    vidPlatforms.push(cb.value);
-  });
-  return { imgPlatforms, vidPlatforms };
+  const imgRadio = document.querySelector('#imgPlatformDropdown input[name="imgPlatform"]:checked');
+  const vidRadio = document.querySelector('#vidPlatformDropdown input[name="vidPlatform"]:checked');
+  return {
+    imgPlatform: imgRadio ? imgRadio.value : 'jimeng',
+    vidPlatform: vidRadio ? vidRadio.value : 'jimeng_video',
+  };
 }
 
 // 点击外部关闭下拉
@@ -420,8 +408,8 @@ async function startGeneration() {
         idea: idea,
         episodes: episodes,
         art_style: artStyle,
-        img_platforms: platforms.imgPlatforms,
-        vid_platforms: platforms.vidPlatforms,
+        img_platform: platforms.imgPlatform,
+        vid_platform: platforms.vidPlatform,
       }),
     });
 

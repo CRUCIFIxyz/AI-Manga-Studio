@@ -180,36 +180,36 @@
               </div>
               <div class="config-row">
                 <div class="config-item config-item-wide">
-                  <label data-i18n="config_img_platforms">🖼️ 图像生成平台</label>
+                  <label data-i18n="config_img_platforms">🖼️ 图像生成平台（单选）</label>
                   <div class="dropdown-panel" id="imgPlatformDropdown">
                     <button class="dropdown-toggle" onclick="toggleDropdown('imgPlatformDropdown')">
-                      <span id="imgPlatformLabel">即梦/Flux · Midjourney</span>
+                      <span id="imgPlatformLabel">即梦 / Flux</span>
                       <span class="dropdown-arrow">▼</span>
                     </button>
                     <div class="dropdown-menu">
-                      <label class="dd-option selected"><input type="checkbox" name="imgPlatform" value="jimeng" checked onchange="updateDropdownLabel('imgPlatformDropdown')"> 即梦 / Flux</label>
-                      <label class="dd-option selected"><input type="checkbox" name="imgPlatform" value="midjourney" checked onchange="updateDropdownLabel('imgPlatformDropdown')"> Midjourney</label>
-                      <label class="dd-option selected"><input type="checkbox" name="imgPlatform" value="happyhorse" checked onchange="updateDropdownLabel('imgPlatformDropdown')"> HappyHorse</label>
-                      <label class="dd-option"><input type="checkbox" name="imgPlatform" value="stablediffusion" onchange="updateDropdownLabel('imgPlatformDropdown')"> Stable Diffusion</label>
+                      <label class="dd-option selected"><input type="radio" name="imgPlatform" value="jimeng" checked onchange="updateDropdownLabel('imgPlatformDropdown')"> 即梦 / Flux</label>
+                      <label class="dd-option"><input type="radio" name="imgPlatform" value="midjourney" onchange="updateDropdownLabel('imgPlatformDropdown')"> Midjourney</label>
+                      <label class="dd-option"><input type="radio" name="imgPlatform" value="happyhorse" onchange="updateDropdownLabel('imgPlatformDropdown')"> HappyHorse</label>
+                      <label class="dd-option"><input type="radio" name="imgPlatform" value="stablediffusion" onchange="updateDropdownLabel('imgPlatformDropdown')"> Stable Diffusion</label>
                     </div>
                   </div>
                 </div>
               </div>
               <div class="config-row">
                 <div class="config-item config-item-wide">
-                  <label data-i18n="config_vid_platforms">🎬 视频生成平台</label>
+                  <label data-i18n="config_vid_platforms">🎬 视频生成平台（单选）</label>
                   <div class="dropdown-panel" id="vidPlatformDropdown">
                     <button class="dropdown-toggle" onclick="toggleDropdown('vidPlatformDropdown')">
-                      <span id="vidPlatformLabel">即梦 · Pika · Kling</span>
+                      <span id="vidPlatformLabel">即梦（图生视频）</span>
                       <span class="dropdown-arrow">▼</span>
                     </button>
                     <div class="dropdown-menu">
-                      <label class="dd-option selected"><input type="checkbox" name="vidPlatform" value="jimeng_video" checked onchange="updateDropdownLabel('vidPlatformDropdown')"> 即梦（图生视频）</label>
-                      <label class="dd-option selected"><input type="checkbox" name="vidPlatform" value="pika" checked onchange="updateDropdownLabel('vidPlatformDropdown')"> Pika / PixVerse</label>
-                      <label class="dd-option selected"><input type="checkbox" name="vidPlatform" value="kling" checked onchange="updateDropdownLabel('vidPlatformDropdown')"> Kling / 可灵</label>
-                      <label class="dd-option"><input type="checkbox" name="vidPlatform" value="hailuo" onchange="updateDropdownLabel('vidPlatformDropdown')"> Hailuo / 海螺</label>
-                      <label class="dd-option"><input type="checkbox" name="vidPlatform" value="happyhorse_video" onchange="updateDropdownLabel('vidPlatformDropdown')"> HappyHorse（视频）</label>
-                      <label class="dd-option"><input type="checkbox" name="vidPlatform" value="runway" onchange="updateDropdownLabel('vidPlatformDropdown')"> Runway Gen-3</label>
+                      <label class="dd-option selected"><input type="radio" name="vidPlatform" value="jimeng_video" checked onchange="updateDropdownLabel('vidPlatformDropdown')"> 即梦（图生视频）</label>
+                      <label class="dd-option"><input type="radio" name="vidPlatform" value="pika" onchange="updateDropdownLabel('vidPlatformDropdown')"> Pika / PixVerse</label>
+                      <label class="dd-option"><input type="radio" name="vidPlatform" value="kling" onchange="updateDropdownLabel('vidPlatformDropdown')"> Kling / 可灵</label>
+                      <label class="dd-option"><input type="radio" name="vidPlatform" value="hailuo" onchange="updateDropdownLabel('vidPlatformDropdown')"> Hailuo / 海螺</label>
+                      <label class="dd-option"><input type="radio" name="vidPlatform" value="happyhorse_video" onchange="updateDropdownLabel('vidPlatformDropdown')"> HappyHorse（视频）</label>
+                      <label class="dd-option"><input type="radio" name="vidPlatform" value="runway" onchange="updateDropdownLabel('vidPlatformDropdown')"> Runway Gen-3</label>
                     </div>
                   </div>
                 </div>

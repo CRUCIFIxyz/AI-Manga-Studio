@@ -44,15 +44,13 @@ GENRE_MAP = {
 
 def build_system_prompt(
     genre_cn: str, episode_count: int, art_style: str,
-    img_platforms: list, vid_platforms: list,
+    img_platform: str, vid_platform: str,
 ) -> str:
     """构建DeepSeek System Prompt——核心剧本生成指令。
 
-    v3.0 优化：
-    - 英文指令
-    - 根据用户选中的平台生成专属格式的AI提示词
-    - 模块间强制交叉引用（角色名→分镜→提示词）
-    - 一致性约束 + 参考图生成建议 + 钩子密度约束
+    v3.2 优化：
+    - 单选平台——只有一个图像平台+一个视频平台
+    - 强力约束：ALL prompts必须严格适配选中平台格式
     """
     art_styles = {
         "ghibli": {
@@ -138,8 +136,8 @@ def build_system_prompt(
         for n in range(1, episode_count + 1)
     )
 
-    # 平台提示词格式定义
-    platform_formats = _build_platform_formats(img_platforms, vid_platforms, art)
+    # 平台提示词格式定义（单选：各一个平台）
+    platform_formats = _build_platform_formats(img_platform, vid_platform, art)
 
     return f"""You are a professional AI short drama scriptwriter specializing in "{genre_cn}" genre.
 
@@ -223,175 +221,218 @@ HARD CONSTRAINTS - MUST FOLLOW:
 7. Output markdown directly. No meta-commentary outside the six modules."""
 
 
-def _build_platform_formats(img_platforms: list, vid_platforms: list, art: dict) -> str:
-    """根据用户选中的平台构建分平台提示词格式指令。
+def _build_platform_formats(img_platform: str, vid_platform: str, art: dict) -> str:
+    """根据用户单选平台构建强力约束的提示词格式指令。
 
-    图像平台：jimeng(即梦/Flux), midjourney, happyhorse
-    视频平台：pika(Pika/PixVerse), kling(Kling/可灵), hailuo(Hailuo/海螺)
+    仅生成选中平台的专属格式——ALL prompts必须严格遵循。
     """
     sections = []
     art_desc = art['desc']
     neg = art['negative']
 
-    # 图像平台
-    if "jimeng" in img_platforms:
-        sections.append(f"""### Jimeng / Flux (Image Generation)
+    # 图像平台（单选）
+    img_formats = {
+        "jimeng": f"""### SELECTED IMAGE PLATFORM: Jimeng / Flux
 
-For each key shot, output:
+**CRITICAL: ALL image prompts MUST follow this exact format. No exceptions.**
+
+For EVERY key shot, output EXACTLY:
 ```
 [Art style: {art_desc}], [Character description from Module 02], [Action], [Scene from Module 03], [Lighting], [Quality tags: 8K, highly detailed, masterpiece] --ar 16:9
 
 Negative prompt: {neg}
 ```
 
-Provide at least 5 prompts labeled by shot number (S101, S102, ...).""")
+Output at least 8 prompts, each labeled by shot number (S101, S102, ...).""",
 
-    if "midjourney" in img_platforms:
-        sections.append(f"""### Midjourney (Image Generation)
+        "midjourney": f"""### SELECTED IMAGE PLATFORM: Midjourney
 
-For each key shot, output:
+**CRITICAL: ALL image prompts MUST follow this exact format. No exceptions.**
+
+For EVERY key shot, output EXACTLY:
 ```
 [Character from 02] in [Scene from 03], [Action], {art_desc}, [Lighting details] --ar 16:9 --style expressive --niji 6
 
-Negative: --no {neg}
+--no {neg}
 ```
 
-Provide at least 3 prompts labeled by shot number.""")
+Output at least 8 prompts, each labeled by shot number.""",
 
-    if "happyhorse" in img_platforms:
-        sections.append(f"""### HappyHorse (Image Generation)
+        "happyhorse": f"""### SELECTED IMAGE PLATFORM: HappyHorse
 
-For each key shot, output:
+**CRITICAL: ALL image prompts MUST follow this exact format. No exceptions.**
+
+For EVERY key shot, output EXACTLY:
 ```
-[Scene description], [Character appearance from Module 02], [Action], {art_desc}, [Mood: ...], [Camera angle: wide/close-up]
+Scene: [Scene from 03]
+Character: [Appearance from Module 02 -- copy exact keywords]
+Action: [What the character is doing]
+Style: {art_desc}
+Mood: [Atmosphere keyword from Module 03]
+Camera: [wide / medium / close-up]
 
-Reference image suggestion: first generate character reference sheet using Module 02 Reference Image Prompts, then generate scene backgrounds using Module 03 Reference Image Prompts, then composite.
-```
-
-Provide at least 3 prompts labeled by shot number.""")
-
-    # 视频平台
-    if "pika" in vid_platforms:
-        sections.append(f"""### Pika / PixVerse (Image-to-Video / Text-to-Video)
-
-Format: character description + motion prompt + scene + style.
-
-For each shot, output:
-```
-[Character from 02], [Motion: camera slowly pans right, character walks forward, hair blowing in wind, detailed movement], [Scene from 03], {art_desc}, cinematic lighting, 8K quality
-
-Motion intensity: medium-high
-Duration: 8-12 seconds
+Reference images to prepare: generate character sheet from Module 02 Reference Image Prompts first, then scene backgrounds from Module 03 Reference Image Prompts.
 ```
 
-CRITICAL: Always include explicit camera movement and character motion descriptions. Pika needs motion direction.
+Output at least 8 prompts, each labeled by shot number.""",
 
-Provide at least 3 prompts labeled by shot number.""")
+        "stablediffusion": f"""### SELECTED IMAGE PLATFORM: Stable Diffusion
 
-    if "kling" in vid_platforms:
-        sections.append(f"""### Kling / Keling (Image-to-Video with start/end frames)
+**CRITICAL: ALL image prompts MUST follow this exact format. No exceptions.**
 
-Format: Start frame description -> End frame description, action in between.
-
-For each shot, output:
+For EVERY key shot, output EXACTLY:
 ```
-START FRAME: [Character from 02] in [Scene from 03], [initial pose/position], {art_desc}
-END FRAME: [Character from 02] in [Scene from 03], [final pose/position], {art_desc}
-ACTION: [What happens between start and end - character moves, camera pans, objects change]
+({art_desc}), [Character from 02], [Action], [Scene from 03], [Lighting], masterpiece, best quality, 8K, highly detailed
+
+Negative prompt: {neg}, lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry
+```
+
+Output at least 8 prompts, each labeled by shot number.""",
+    }
+
+    if img_platform in img_formats:
+        sections.append(img_formats[img_platform])
+
+    # 视频平台（单选）
+    vid_formats = {
+        "jimeng_video": f"""### SELECTED VIDEO PLATFORM: Jimeng / 即梦 (Image-to-Video)
+
+**CRITICAL: ALL video prompts MUST follow this exact format. No exceptions.**
+
+Jimeng works by uploading reference images + defining motion. For EVERY shot, output EXACTLY:
+```
+Reference image: [Character reference from Module 02] + [Scene reference from Module 03]
+Action: [Detailed motion description -- character walks, turns, gestures, objects move]
+Camera: [Pan left / Pan right / Zoom in / Zoom out / Static]
+Style: {art_desc}, cinematic lighting, smooth motion, 8K
+Motion strength: [1-10, where 5=natural, 8=dynamic -- recommend 5-7]
+Duration: 6 seconds
+```
+
+KEY RULES:
+- Always reference specific images from Module 02/03 Reference Image Prompts
+- Motion strength MUST be specified as a number
+- Keep duration 4-8 seconds per shot
+- Avoid extreme motion that causes visual distortion
+
+Output at least 5 prompts labeled by shot number.""",
+
+        "pika": f"""### SELECTED VIDEO PLATFORM: Pika / PixVerse
+
+**CRITICAL: ALL video prompts MUST follow this exact format. No exceptions.**
+
+Pika needs explicit motion direction. For EVERY shot, output EXACTLY:
+```
+[Character from 02], [Motion: describe EXACT camera movement AND character action -- e.g., "camera slowly pans right while character walks forward, hair blowing gently in breeze"], [Scene from 03], {art_desc}, cinematic lighting, 8K
+
+Motion intensity: [low / medium / high]
+Duration: 10 seconds
+```
+
+KEY RULES:
+- Camera movement MUST be explicitly stated (pan/tilt/zoom/tracking/dolly)
+- Character motion MUST be explicit (walks/runs/turns/gestures/reaches)
+- Never use vague terms like "some movement" -- be precise
+- Motion intensity MUST be set per shot
+
+Output at least 5 prompts labeled by shot number.""",
+
+        "kling": f"""### SELECTED VIDEO PLATFORM: Kling / 可灵
+
+**CRITICAL: ALL video prompts MUST follow this exact format. No exceptions.**
+
+Kling requires start/end frame descriptions. For EVERY shot, output EXACTLY:
+```
+START FRAME: [Character from 02] in [Scene from 03], [exact initial pose], {art_desc}
+END FRAME: [Character from 02] in [Scene from 03], [exact final pose -- must differ from start], {art_desc}
+ACTION DURING TRANSITION: [Precise description of what happens between frames]
 Style: {art_desc}, cinematic, 8K
-Duration: 5-10 seconds
+Duration: 5-8 seconds
 ```
 
-Provide at least 3 prompts labeled by shot number.""")
+KEY RULES:
+- Start and end frames MUST describe different poses/positions
+- The action between frames MUST be clearly described
+- Every frame description must include the character and scene names
 
-    if "hailuo" in vid_platforms:
-        sections.append(f"""### Hailuo / HailuoAI (Image-to-Video)
+Output at least 5 prompts labeled by shot number.""",
 
-Format: image description + motion + style + quality.
+        "hailuo": f"""### SELECTED VIDEO PLATFORM: Hailuo / 海螺
 
-For each shot, output:
+**CRITICAL: ALL video prompts MUST follow this exact format. No exceptions.**
+
+For EVERY shot, output EXACTLY:
 ```
-[Scene from 03] with [Character from 02], [Action and motion description], {art_desc}, smooth camera movement, film grain, cinematic color grade, 8K
+[Scene from 03] with [Character from 02], [Detailed action + motion], {art_desc}, smooth camera movement, film grain, cinematic color grade, 8K
 
-Camera: [Specify: static / pan left / pan right / zoom in / zoom out / tracking shot]
-Duration: 8-12 seconds
-```
-
-Provide at least 3 prompts labeled by shot number.""")
-
-    if "jimeng_video" in vid_platforms:
-        sections.append(f"""### Jimeng / 即梦 (Image-to-Video)
-
-Jimeng supports image-to-video with motion control. Use uploaded reference images from Modules 02/03.
-
-For each shot, output:
-```
-Reference images: [Character reference from Module 02] + [Scene reference from Module 03]
-Action: [Describe the motion: character walks, turns, gestures, camera pans or zooms]
-Style: {art_desc}, cinematic lighting, smooth motion, 8K quality
-Motion strength: [Specify 1-10, where 5=natural movement, 8=dynamic action]
-Duration: 4-8 seconds
+Camera: [static / pan left / pan right / zoom in / zoom out / tracking shot]
+Duration: 10 seconds
 ```
 
-Key: Jimeng works best with clear reference images and moderate motion strength (5-7). Avoid extreme motion that causes distortion.
+KEY RULES:
+- Camera type MUST be explicitly chosen from the list above
+- Motion must be described in concrete visual terms
 
-Provide at least 3 prompts labeled by shot number.""")
+Output at least 5 prompts labeled by shot number.""",
 
-    if "happyhorse_video" in vid_platforms:
-        sections.append(f"""### HappyHorse (Image-to-Video)
+        "happyhorse_video": f"""### SELECTED VIDEO PLATFORM: HappyHorse (Video)
 
-HappyHorse supports element composition: upload images, combine elements, define interactions.
+**CRITICAL: ALL video prompts MUST follow this exact format. No exceptions.**
 
-For each shot, output:
+HappyHorse composites elements with defined interactions. For EVERY shot, output EXACTLY:
 ```
-Element 1: [Character image reference from Module 02]
-Element 2: [Scene background from Module 03]
-Element 3+: [Key props or secondary characters]
-Interaction: [How elements interact — e.g., "the character walks from left to right through the scene, leaves rustle as she passes"]
+Element 1 (Character): [Image reference from Module 02]
+Element 2 (Background): [Image reference from Module 03]
+Element 3+ (Props/FX): [Any additional elements]
+Interaction: [How elements interact -- e.g., "character walks left-to-right across scene, fabric moves, background parallax scrolls slowly"]
 Style: {art_desc}, cohesive lighting, 8K
-Animation type: [Full motion / Partial motion / Camera only]
-Duration: 6-12 seconds
+Animation: [Full scene motion / Character only / Camera only / Parallax layers]
+Duration: 8 seconds
 ```
 
-Key: HappyHorse excels at compositing separate elements into a cohesive scene. Always specify which elements move and which stay static.
+KEY RULES:
+- List ALL elements with their Module references
+- Define which elements move and which are static
+- HappyHorse excels at layered compositing -- use this strength
 
-Provide at least 3 prompts labeled by shot number.""")
+Output at least 5 prompts labeled by shot number.""",
 
-    if "runway" in vid_platforms:
-        sections.append(f"""### Runway Gen-3 (Image-to-Video / Text-to-Video)
+        "runway": f"""### SELECTED VIDEO PLATFORM: Runway Gen-3
 
-Runway supports both keyframe-based and text-based video generation with Motion Brush control.
+**CRITICAL: ALL video prompts MUST follow this exact format. No exceptions.**
 
-For each shot, output:
+Runway's Motion Brush allows per-region animation. For EVERY shot, output EXACTLY:
 ```
-Prompt: [Character from 02] in [Scene from 03], [Detailed action description], {art_desc}, cinematic lighting, film grain, 24fps
+Base prompt: [Character from 02] in [Scene from 03], [Action], {art_desc}, cinematic lighting, film grain, 24fps
 
-Motion Brush areas:
-- Region 1 (face/head area): [subtle micro-movements]
-- Region 2 (body/clothing): [natural sway/breeze effect]
-- Region 3 (background elements): [describe movement — clouds drift, leaves fall, water ripples]
+Motion Brush regions:
+- Region 1 (head/face): [subtle micro-movements -- eye blink, hair sway]
+- Region 2 (body/clothing): [natural movement -- breathing, fabric shift]
+- Region 3 (background): [environmental motion -- clouds drift, leaves fall, light flicker]
 
 Camera: [Static / Slow pan / Gentle zoom]
 Style Preset: Cinematic
-Duration: 4-10 seconds
+Duration: 5-8 seconds
 ```
 
-Key: Runway's Motion Brush allows selective animation of specific regions. Always specify which areas should move and how.
+KEY RULES:
+- At least 3 Motion Brush regions per shot
+- Each region must have a specific movement description
+- Camera choice must match the scene mood
 
-Provide at least 3 prompts labeled by shot number.""")
+Output at least 5 prompts labeled by shot number.""",
+    }
+
+    if vid_platform in vid_formats:
+        sections.append(vid_formats[vid_platform])
 
     if not sections:
-        # 如果没选任何平台，默认生成通用格式
         sections.append(f"""### Generic AI Prompts
-
-For each key shot, output:
 ```
-[Art style: {art_desc}], [Character from 02], [Action], [Scene from 03], [Lighting], [Quality: 8K, highly detailed] --ar 16:9
-
-Negative prompt: {neg}
+[Art style: {art_desc}], [Character from 02], [Action], [Scene from 03], [Lighting], [Quality: 8K] --ar 16:9
+Negative: {neg}
 ```
-
-Provide at least 5 prompts labeled by shot number.""")
+Output at least 8 prompts labeled by shot number.""")
 
     return "\n\n".join(sections)
 
@@ -518,13 +559,13 @@ def generate():
 
     genre_cn = GENRE_MAP[genre_key]
 
-    # 获取平台选择（前端传来的数组）
-    img_platforms = data.get("img_platforms", ["jimeng"])
-    vid_platforms = data.get("vid_platforms", ["pika", "kling"])
+    # 获取平台选择（单选：各一个平台）
+    img_platform = data.get("img_platform", "jimeng")
+    vid_platform = data.get("vid_platform", "jimeng_video")
 
     try:
         # 构建Prompt
-        system_prompt = build_system_prompt(genre_cn, episode_count, art_style, img_platforms, vid_platforms)
+        system_prompt = build_system_prompt(genre_cn, episode_count, art_style, img_platform, vid_platform)
         user_prompt = build_user_prompt(user_idea, genre_cn, episode_count)
 
         # 调用DeepSeek API
