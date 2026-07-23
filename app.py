@@ -161,7 +161,8 @@ def build_system_prompt(genre_cn: str, episode_count: int, art_style: str) -> st
 ### 即梦 / Flux / Midjourney（文生图 / 图生图）
 格式：`[画风], [角色描述——引用02中的角色外貌], [动作], [场景描述——引用03中的场景], [光线], [画质标签] --ar 16:9 --style {art_style}`
 
-负面提示词模板：`{art['negative']}`
+**每个提示词后必须附上负面提示词**，格式：
+`Negative prompt: {art['negative']}`
 
 请输出至少5个关键镜头的提示词，标注对应分镜号：
 
