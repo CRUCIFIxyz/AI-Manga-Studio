@@ -305,19 +305,23 @@ def _validate_step(step_id: str, content: str, state: dict, modules: dict, extra
         char_count = len(re.findall(r"###\s*角色", content))
         if char_count < 2:
             return False, f"角色数不足: {char_count}"
-        if len(content) < 300:
+        if len(content) < 400:
             return False, "内容过短"
-        # 检查每个角色是否有外貌描述
         appear_count = len(re.findall(r"外貌[：:]", content))
         if appear_count < char_count:
             return False, f"外貌描述不足: {appear_count}/{char_count}"
+        # 检查每个角色外貌是否 ≥ 100 字符
+        appear_blocks = re.findall(r"外貌[：:]\s*(.+?)(?=\n-|\n\n|\Z)", content, re.DOTALL)
+        for i, block in enumerate(appear_blocks):
+            if len(block.strip()) < 100:
+                return False, f"角色{i+1}外貌描述过短({len(block.strip())}字,需≥100)"
         return True, ""
 
     if step_id == "03_scenes":
         scene_count = len(re.findall(r"###\s*场景", content))
-        if scene_count < 5:
-            return False, f"场景数不足: {scene_count}"
-        if len(content) < 500:
+        if scene_count < 6:
+            return False, f"场景数不足: {scene_count}（需≥6）"
+        if len(content) < 600:
             return False, "内容过短"
         return True, ""
 

@@ -21,6 +21,8 @@
 - [项目结构](#项目结构)
 - [支持的平台](#支持的平台)
 - [输出格式](#输出格式)
+- [Harness流水线约束体系](#harness流水线约束体系)
+- [开发历史](#开发历史)
 
 ---
 
@@ -235,9 +237,20 @@ AI-Manga-Studio/
 │       ├── 05_分镜脚本.md
 │       └── 06_AI提示词.md
 │
-├── DEVELOPMENT_SPEC.md       # 开发规范文档
-├── BUSINESS_FLOW.md          # 完整业务流程文档
-└── DEMO_SCRIPT.md            # 演示视频拍摄脚本
+├── harness/                   # Harness流水线约束体系
+│   ├── PIPELINE.md            # 6步架构 + 数据传递定义
+│   ├── CONSTRAINTS.md         # 7条全局约束
+│   ├── CONSISTENCY.md         # 6条跨模块一致性规则
+│   └── steps/
+│       ├── STEP_01_outline.md
+│       ├── STEP_02_characters.md
+│       ├── STEP_03_scenes.md
+│       ├── STEP_04_dialogue.md
+│       ├── STEP_05_storyboard.md
+│       └── STEP_06_prompts.md
+│
+├── harness_engine.py          # 流水线引擎（~400行）
+├── DEVELOPMENT_SPEC.md        # 开发规范文档
 ```
 
 ---
@@ -288,6 +301,51 @@ Duration: 10 seconds
 
 ---
 
+## Harness流水线约束体系
+
+> v3.3 新增。通过9个MD文档 + 6步顺序引擎，对剧本生成全流程进行规范化约束。
+
+### 为什么需要Harness
+
+单次API调用（`/generate`）的问题是：6个模块在一个prompt中生成，AI注意力分散，容易出现模块间角色名不一致、分镜引用错误、平台格式混乱。Harness将生成拆为6步流水线，**每一步的输出数据强制注入后续步骤的prompt**，从根本上消除一致性风险。
+
+### 架构
+
+```
+STEP 01 大纲 ──→ STEP 02 角色 ──→ STEP 03 场景 ──→ STEP 04 台词 ──→ STEP 05 分镜 ──→ STEP 06 提示词
+    │               │               │               │               │               │
+    └── 提取大纲 ──→ 注入角色名 ──→ 注入场景名 ──→ 注入外貌Map ──→ 注入分镜表 ──→ 注入平台选择
+```
+
+### 约束文档体系
+
+| 文档 | 内容 | 约束数 |
+|------|------|:--:|
+| `harness/PIPELINE.md` | 6步架构 + 数据传递 + 三层校验体系 | — |
+| `harness/CONSTRAINTS.md` | 7条全局约束（语言/原创/钩子/时长/格式/角色完整性/安全） | 7 |
+| `harness/CONSISTENCY.md` | 6条跨模块一致性规则（角色名/外貌/场景名/集数/平台/钩子） | 6 |
+| `harness/steps/STEP_01~06.md` | 每步的Input/SystemPrompt/Output/Validation | 36条校验规则 |
+
+### 两种模式
+
+| | `/generate`（原有） | `/generate_harness`（新增） |
+|:---|:---:|:---:|
+| API调用 | 1次 | 6次 |
+| 一致性保障 | prompt约束 | 前置数据强制注入 ✅ |
+| 每步校验 | 无 | 最多重试2次 ✅ |
+| 约束文档 | 代码内嵌 | 9个MD独立管理 ✅ |
+
+### 使用方式
+
+```bash
+# Harness流水线（推荐）
+curl -X POST http://127.0.0.1:5000/generate_harness \
+  -H "Content-Type: application/json" \
+  -d '{"genre":"campus_fantasy","idea":"猫在魔法学院","episodes":2,"art_style":"ghibli","img_platform":"midjourney","vid_platform":"pika"}'
+```
+
+---
+
 ## 开发历史
 
 | 版本 | 提交 | 内容 |
@@ -298,6 +356,7 @@ Duration: 10 seconds
 | v2.0 | `edd8441` | Phase 3: 分平台提示词 + 前端平台选择 |
 | v3.0 | `6a9bae5` | 扩充：10种画风 + 6个视频平台 + 下拉面板UI |
 | v3.2 | `6f2760c` | 单选平台 + CRITICAL/EXACTLY/KEY RULES三重约束 |
+| v3.3 | `9c92444` | **Harness流水线**：9个MD约束文档 + 6步引擎 + 每步校验+重试 |
 
 ### Git分支
 
