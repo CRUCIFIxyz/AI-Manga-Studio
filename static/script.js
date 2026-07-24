@@ -79,6 +79,9 @@ const i18n = {
     err_network: "网络错误，请检查连接后重试",
     err_timeout: "AI服务响应超时，请稍后重试",
     err_server: "服务器错误，请重试",
+    config_harness: "严格模式",
+    config_harness_off: "快速模式",
+    config_harness_desc: "6步流水线校验，质量更高，耗时约3-5分钟",
   },
   en: {
     brand_name: "AI Manga Studio",
@@ -153,6 +156,9 @@ const i18n = {
     err_network: "Network error. Check your connection and try again",
     err_timeout: "AI service timed out. Please try again later",
     err_server: "Server error. Please try again",
+    config_harness: "Strict Mode",
+    config_harness_off: "Fast Mode",
+    config_harness_desc: "6-step pipeline with validation, higher quality, ~3-5 min",
   }
 };
 
@@ -161,6 +167,7 @@ let currentPanel = 'input';
 let episodeCount = 5;
 let generatedModules = {};
 let currentTab = null;
+let useHarness = false;  // Harness严格模式开关
 
 // ===== 页面初始化 =====
 document.addEventListener('DOMContentLoaded', () => {
@@ -372,6 +379,10 @@ function navigateTo(target) {
 
 // ===== 开始生成 =====
 async function startGeneration() {
+  if (useHarness) {
+    return startHarnessGeneration();
+  }
+
   const ideaInput = document.getElementById('ideaInput');
   const idea = ideaInput.value.trim();
 
@@ -437,6 +448,205 @@ async function startGeneration() {
     navigateTo('input');
     showToast(err.message || t('err_network'), true);
     console.error('Generation error:', err);
+  }
+}
+
+// ===== Harness 严格模式生成（SSE流式）=====
+const STEP_NAME_TO_INDEX = {
+  '剧本大纲': 0,
+  '角色设定': 1,
+  '场景描述': 2,
+  '分集台词': 3,
+  '分镜脚本': 4,
+  'AI提示词': 5,
+};
+
+async function startHarnessGeneration() {
+  const ideaInput = document.getElementById('ideaInput');
+  const idea = ideaInput.value.trim();
+
+  if (!idea) {
+    showToast(t('err_empty'), true);
+    ideaInput.focus();
+    ideaInput.style.borderColor = '#F598A8';
+    setTimeout(() => { ideaInput.style.borderColor = ''; }, 2000);
+    return;
+  }
+
+  const genreRadio = document.querySelector('input[name="genre"]:checked');
+  const genre = genreRadio ? genreRadio.value : 'campus_fantasy';
+  const artStyle = document.getElementById('artStyle').value;
+  const episodes = episodeCount;
+  const platforms = getSelectedPlatforms();
+
+  navigateTo('generating');
+  resetProgressUI();
+
+  // 更新状态文字
+  document.getElementById('genStatus').textContent =
+    currentLang === 'zh'
+      ? 'Harness 6步流水线生成中，预计3-5分钟...'
+      : 'Harness 6-step pipeline running, ~3-5 minutes...';
+
+  try {
+    const response = await fetch('/generate_harness', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        genre: genre,
+        idea: idea,
+        episodes: episodes,
+        art_style: artStyle,
+        img_platform: platforms.imgPlatform,
+        vid_platform: platforms.vidPlatform,
+        stream: true,
+      }),
+    });
+
+    if (!response.ok) {
+      const errData = await response.json().catch(() => ({}));
+      throw new Error(errData.error || t('err_server'));
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          try {
+            const event = JSON.parse(line.slice(6));
+            handleHarnessEvent(event);
+          } catch (e) { /* 忽略解析错误 */ }
+        }
+      }
+    }
+  } catch (err) {
+    navigateTo('input');
+    showToast(err.message || t('err_network'), true);
+    console.error('Harness generation error:', err);
+  }
+}
+
+function handleHarnessEvent(event) {
+  if (event.type === 'progress') {
+    const stepIdx = STEP_NAME_TO_INDEX[event.step];
+    if (stepIdx === undefined) return;
+
+    if (event.status === 'running') {
+      updateStepNode(stepIdx, 'active');
+      updateCheckItem(stepIdx, 'active');
+      // 确保前面的已完成
+      for (let i = 0; i < stepIdx; i++) {
+        updateStepNode(i, 'done');
+        updateCheckItem(i, 'done');
+      }
+      const pct = (stepIdx / 6) * 100;
+      document.getElementById('progressFill').style.width = pct + '%';
+      document.getElementById('progressPercent').textContent = Math.round(pct) + '%';
+
+      const msgs = {
+        zh: {
+          '剧本大纲': '正在生成剧本大纲...',
+          '角色设定': '正在设计角色...',
+          '场景描述': '正在构建场景...',
+          '分集台词': '正在编写台词...',
+          '分镜脚本': '正在绘制分镜...',
+          'AI提示词': '正在优化AI提示词...',
+        },
+        en: {
+          '剧本大纲': 'Generating outline...',
+          '角色设定': 'Designing characters...',
+          '场景描述': 'Building scenes...',
+          '分集台词': 'Writing dialogue...',
+          '分镜脚本': 'Creating storyboard...',
+          'AI提示词': 'Optimizing AI prompts...',
+        },
+      };
+      const genStatus = document.getElementById('genStatus');
+      genStatus.textContent = msgs[currentLang][event.step] || event.step;
+
+    } else if (event.status === 'done') {
+      updateStepNode(stepIdx, 'done');
+      updateCheckItem(stepIdx, 'done');
+      const pct = ((stepIdx + 1) / 6) * 100;
+      document.getElementById('progressFill').style.width = pct + '%';
+      document.getElementById('progressPercent').textContent = Math.round(pct) + '%';
+
+    } else if (event.status === 'retry') {
+      updateStepNode(stepIdx, 'retry');
+      updateCheckItem(stepIdx, 'retry');
+      document.getElementById('genStatus').textContent = event.detail || '校验失败，正在重试...';
+    }
+
+  } else if (event.type === 'complete') {
+    generatedModules = event.modules || {};
+    document.getElementById('resultInfo').textContent =
+      `${currentLang === 'zh' ? '已保存至' : 'Saved to'} ${event.folder}`;
+    completeProgress();
+    navigateTo('result');
+    switchTab(Object.keys(generatedModules)[0] || '01_剧本大纲');
+
+  } else if (event.type === 'error') {
+    navigateTo('input');
+    showToast(event.error, true);
+  }
+}
+
+// ===== Harness 模式切换 =====
+function toggleHarnessMode() {
+  useHarness = !useHarness;
+  const toggle = document.getElementById('harnessToggle');
+  if (toggle) {
+    toggle.classList.toggle('active', useHarness);
+    const label = document.getElementById('harnessToggleLabel');
+    if (label) {
+      label.innerHTML = useHarness
+        ? (currentLang === 'zh' ? '⏳ <span data-i18n="config_harness">严格模式</span>' : '⏳ <span>Strict Mode</span>')
+        : (currentLang === 'zh' ? '⚡ <span data-i18n="config_harness_off">快速模式</span>' : '⚡ <span>Fast Mode</span>');
+    }
+  }
+  // 更新状态面板中的AI模型显示
+  document.querySelectorAll('.metric').forEach(m => {
+    const label = m.querySelector('.metric-label');
+    if (label && label.textContent.includes('模型')) {
+      const val = m.querySelector('.metric-value');
+      if (val) val.textContent = useHarness ? 'DeepSeek×6' : 'DeepSeek';
+    }
+  });
+}
+
+function updateStepNode(index, status) {
+  const nodes = document.querySelectorAll('.step-node');
+  if (index < nodes.length) {
+    nodes[index].classList.remove('active', 'done', 'retry');
+    if (status === 'active') nodes[index].classList.add('active');
+    else if (status === 'done') nodes[index].classList.add('done');
+    else if (status === 'retry') nodes[index].classList.add('active');
+  }
+}
+
+function updateCheckItem(index, status) {
+  const checks = document.querySelectorAll('.check-item');
+  if (index < checks.length) {
+    checks[index].classList.remove('active', 'done', 'retry');
+    const icon = checks[index].querySelector('.check-icon');
+    if (status === 'active') {
+      checks[index].classList.add('active');
+      icon.textContent = '◉';
+    } else if (status === 'done') {
+      checks[index].classList.add('done');
+      icon.textContent = '✓';
+    } else if (status === 'retry') {
+      checks[index].classList.add('active');
+      icon.textContent = '↻';
+    }
   }
 }
 

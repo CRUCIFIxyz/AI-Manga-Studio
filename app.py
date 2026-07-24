@@ -8,10 +8,12 @@ import os
 import re
 import json
 import time
+import threading
+from queue import Queue
 from datetime import datetime
 from pathlib import Path
 
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, Response
 from dotenv import load_dotenv
 import requests
 
@@ -660,7 +662,11 @@ def list_scripts():
 
 @app.route("/generate_harness", methods=["POST"])
 def generate_harness():
-    """Harness流水线路由：6步顺序生成，每步有校验和重试。"""
+    """Harness流水线路由：6步顺序生成，每步有校验和重试。
+    支持两种模式：
+    - SSE流式（前端默认）：实时推送每步进度
+    - JSON阻塞（兼容旧行为）：请求体带 stream=false 或不支持SSE时
+    """
     data = request.get_json()
 
     genre_key = data.get("genre", "campus_fantasy")
@@ -679,7 +685,7 @@ def generate_harness():
 
     genre_cn = GENRE_MAP[genre_key]
 
-    # 获取画风数据
+    # 画风数据
     art_styles = {
         "ghibli": {"desc": "Studio Ghibli style, soft watercolor, warm nostalgic lighting, hand-drawn feel", "negative": "photorealistic, 3D render, harsh shadows, dark, scary"},
         "shinkai": {"desc": "Makoto Shinkai style, photorealistic lighting, vibrant skies, detailed backgrounds, lens flare", "negative": "cartoon, flat colors, simple shapes, low detail, blurry"},
@@ -694,6 +700,17 @@ def generate_harness():
     }
     art_data = art_styles.get(art_style, art_styles["ghibli"])
 
+    # 判断是否使用 SSE 流式模式
+    use_sse = data.get("stream", True) and request.headers.get("Accept", "") != "application/json"
+
+    if use_sse:
+        return _generate_harness_sse(
+            genre_cn=genre_cn, user_idea=user_idea, episode_count=episode_count,
+            art_style=art_style, art_data=art_data, img_platform=img_platform,
+            vid_platform=vid_platform,
+        )
+
+    # 旧 JSON 阻塞模式（向后兼容）
     try:
         result = run_pipeline(
             genre_cn=genre_cn,
@@ -711,8 +728,6 @@ def generate_harness():
             return jsonify({"error": result.get("error", "流水线执行失败")}), 500
 
         modules = result["modules"]
-
-        # 保存文件
         keyword = user_idea[:20].replace(" ", "_").replace("/", "_")
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         folder_name = f"{genre_cn}_{keyword}_{timestamp}"
@@ -730,6 +745,76 @@ def generate_harness():
         return jsonify({"error": f"Harness流水线错误: {str(e)}"}), 500
 
 
+def _generate_harness_sse(genre_cn, user_idea, episode_count, art_style, art_data,
+                           img_platform, vid_platform):
+    """使用 Server-Sent Events 流式推送 Harness 流水线进度。"""
+    def generate():
+        q = Queue()
+
+        def on_progress(step_name, status, detail):
+            q.put({
+                "type": "progress",
+                "step": step_name,
+                "status": status,
+                "detail": detail,
+            })
+
+        def run_pipeline_thread():
+            try:
+                result = run_pipeline(
+                    genre_cn=genre_cn,
+                    idea=user_idea,
+                    episode_count=episode_count,
+                    art_style=art_style,
+                    art_data=art_data,
+                    img_platform=img_platform,
+                    vid_platform=vid_platform,
+                    api_key=DEEPSEEK_API_KEY,
+                    api_base=DEEPSEEK_API_BASE,
+                    progress_callback=on_progress,
+                )
+
+                if result.get("success"):
+                    modules = result["modules"]
+                    keyword = user_idea[:20].replace(" ", "_").replace("/", "_")
+                    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                    folder_name = f"{genre_cn}_{keyword}_{timestamp}"
+                    save_path = save_modules(modules, folder_name)
+                    q.put({
+                        "type": "complete",
+                        "success": True,
+                        "folder": folder_name,
+                        "path": save_path,
+                        "modules": modules,
+                    })
+                else:
+                    q.put({
+                        "type": "error",
+                        "error": result.get("error", "流水线执行失败"),
+                    })
+            except Exception as e:
+                q.put({"type": "error", "error": str(e)})
+
+        thread = threading.Thread(target=run_pipeline_thread, daemon=True)
+        thread.start()
+
+        while True:
+            event = q.get()
+            yield f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
+            if event["type"] in ("complete", "error"):
+                break
+
+    return Response(
+        generate(),
+        mimetype="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+            "Connection": "keep-alive",
+        },
+    )
+
+
 if __name__ == "__main__":
     print("=" * 60)
     print("  AI漫剧剧本生成器 MVP")
@@ -737,4 +822,4 @@ if __name__ == "__main__":
     print(f"  Output:   {OUTPUT_DIR}")
     print(f"  URL:      http://127.0.0.1:5000")
     print("=" * 60)
-    app.run(debug=True, host="127.0.0.1", port=5000)
+    app.run(debug=True, host="127.0.0.1", port=5000, threaded=True)

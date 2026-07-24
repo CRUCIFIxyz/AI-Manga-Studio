@@ -214,6 +214,15 @@
                   </div>
                 </div>
               </div>
+              <div class="config-row harness-row">
+                <div class="harness-switch" id="harnessToggle" onclick="toggleHarnessMode()">
+                  <div class="harness-track">
+                    <div class="harness-thumb"></div>
+                  </div>
+                  <span class="harness-label" id="harnessToggleLabel" data-i18n="config_harness_off">⚡ 快速模式</span>
+                </div>
+                <span class="harness-desc" data-i18n="config_harness_desc">6步流水线校验，质量更高，耗时约3-5分钟</span>
+              </div>
               <button class="btn-generate" id="btnGenerate" onclick="startGeneration()">
                 <span class="btn-icon">✨</span>
                 <span data-i18n="btn_generate">生成剧本</span>
