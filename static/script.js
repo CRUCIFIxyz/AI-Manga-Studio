@@ -171,7 +171,6 @@ let useHarness = false;  // Harness严格模式开关
 
 // ===== 页面初始化 =====
 document.addEventListener('DOMContentLoaded', () => {
-  initParticles();
   initGenreSelection();
   updateLangUI();
   // 点击其他区域关闭语言菜单
@@ -288,9 +287,9 @@ function initParticles() {
 
 // ===== 题材选择 =====
 function initGenreSelection() {
-  document.querySelectorAll('.genre-item').forEach(item => {
+  document.querySelectorAll('.genre-chip').forEach(item => {
     item.addEventListener('click', function() {
-      document.querySelectorAll('.genre-item').forEach(i => i.classList.remove('selected'));
+      document.querySelectorAll('.genre-chip').forEach(i => i.classList.remove('selected'));
       this.classList.add('selected');
       this.querySelector('input[type="radio"]').checked = true;
     });
@@ -623,7 +622,7 @@ function toggleHarnessMode() {
 }
 
 function updateStepNode(index, status) {
-  const nodes = document.querySelectorAll('.step-node');
+  const nodes = document.querySelectorAll('.tl-node');
   if (index < nodes.length) {
     nodes[index].classList.remove('active', 'done', 'retry');
     if (status === 'active') nodes[index].classList.add('active');
@@ -657,7 +656,7 @@ function resetProgressUI() {
   if (progressInterval) clearInterval(progressInterval);
   document.getElementById('progressFill').style.width = '0%';
   document.getElementById('progressPercent').textContent = '0%';
-  document.querySelectorAll('.step-node').forEach(n => n.classList.remove('active', 'done'));
+  document.querySelectorAll('.tl-node').forEach(n => n.classList.remove('active', 'done'));
   document.querySelectorAll('.check-item').forEach(n => n.classList.remove('active', 'done'));
   document.querySelectorAll('.check-icon').forEach(n => n.textContent = '○');
 }
@@ -666,7 +665,7 @@ function startProgressAnimation() {
   let progress = 0;
   const fill = document.getElementById('progressFill');
   const percent = document.getElementById('progressPercent');
-  const steps = document.querySelectorAll('.step-node');
+  const steps = document.querySelectorAll('.tl-node');
   const checks = document.querySelectorAll('.check-item');
   const genStatus = document.getElementById('genStatus');
 
@@ -724,7 +723,7 @@ function completeProgress() {
   fill.style.width = '100%';
   percent.textContent = '100%';
 
-  document.querySelectorAll('.step-node').forEach(n => { n.classList.remove('active'); n.classList.add('done'); });
+  document.querySelectorAll('.tl-node').forEach(n => { n.classList.remove('active'); n.classList.add('done'); });
   document.querySelectorAll('.check-item').forEach(c => {
     c.classList.remove('active'); c.classList.add('done');
     c.querySelector('.check-icon').textContent = '✓';
