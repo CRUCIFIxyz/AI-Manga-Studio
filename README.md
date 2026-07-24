@@ -129,16 +129,18 @@
 
 | 分支 | 设计语言 | 配色 | 氛围 |
 |:---|------|------|------|
-| `pt.2-MVP_1.2` (**当前**) | **The Verge 暗黑编辑风** | `#131313` 画布 + `#3cffd0` Mint + `#5200ff` UV | 开发者终端 x 科技夜店 x 极客杂志 |
+| `pt.2-MVP_1.2` | The Verge 暗黑编辑风 | `#131313` 画布 + `#3cffd0` Mint + `#5200ff` UV | 开发者终端 x 科技夜店 x 极客杂志 |
+| `pt.2-MVP_1.3` (**当前**) | **Claude 暖调文艺风** | `#faf9f5` 奶油画布 + `#cc785c` 珊瑚 + `#181715` 深蓝 | 文学杂志 x 温暖人性 x 安静思考 |
 | `pt.2-MVP_1.1` | 马卡龙粉色系 | `#F598A8` 草莓 / `#FAB8C4` 蜜桃 / `#A8D8C8` 薄荷 | 少女心 x 轻甜品风 x 日系可爱 |
 
-**当前分支 (`pt.2-MVP_1.2`) 设计特性：**
-- **Masthead 巨幅 wordmark**：Anton 粗体 90px，`line-height: 0.85`
-- **StoryStream 时间线**：垂直 rail + 6步节点 + Mono 全大写编号
-- **色彩即层级**：Mint 填充强调卡，1px 边框替代阴影，零渐变
-- **Mono 标签系统**：Space Mono 全大写（`letter-spacing: 0.15em`），10-12px kicker/timestamp
-- **Deep Link Blue** (`#3860be`) 统一点击 hover，无下划线
-- **响应式**：1100/768/480 三断点
+**当前分支 (`pt.2-MVP_1.3`) 设计特性：**
+- **Cormorant Garamond serif display**：64px 标题，`letter-spacing: -1.5px`，`line-height: 1.05`
+- **三表面节奏**：Warm Cream 画布 → Light Cream 功能卡 → Dark Navy 产品表面
+- **Coral 珊瑚主色** (`#cc785c`)：仅用于主 CTA 按钮和全宽 callout 卡片
+- **Ring shadows**：`0 0 0 1px` 边框式深度，替代传统阴影
+- **8px 圆角按钮** + 12px 圆角卡片 — 紧凑而不失柔软
+- **96px 章节间距**：杂志式编辑节奏
+- **Inter body** + **JetBrains Mono** 代码 — 人文主义温暖衬线 x 精确等宽
 
 ---
 
@@ -385,12 +387,14 @@ curl -X POST http://127.0.0.1:5000/generate_harness \
 | v3.2 | `6f2760c` | 单选平台 + CRITICAL/EXACTLY/KEY RULES三重约束 |
 | v3.3 | `9c92444` | **Harness流水线**：9个MD约束文档 + 6步引擎 + 每步校验+重试 |
 | v4.0 | `80853b8` | **The Verge Edition**：暗黑编辑风格前端重写 + DESIGN-theverge.md |
+| v5.0 | `24a334b` | **Claude Edition**：暖调文艺编辑风格 + DESIGN-claude.md |
 
 ### Git分支
 
 - `master` — 稳定基线版本
 - `pt.2-MVP_1.1` — 马卡龙粉色系 + Harness SSE
-- `pt.2-MVP_1.2` — **当前活跃** — The Verge 暗黑编辑风
+- `pt.2-MVP_1.2` — The Verge 暗黑编辑风
+- `pt.2-MVP_1.3` — **当前活跃** — Claude 暖调文艺风
 
 ```bash
 # 切换分支

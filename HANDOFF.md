@@ -40,11 +40,12 @@ D:\作业\全球数字创业\
 |------|:--:|------|
 | `master` | 稳定 | 基线版本，含完整UI+单次API调用模式 |
 | `pt.2-MVP_1.1` | 稳定 | Harness流水线版本，含9个MD约束文档+6步引擎+SSE实时进度+设计系统优化 |
-| `pt.2-MVP_1.2` | **活跃** | The Verge Edition — 暗黑编辑风格前端重写，基于DESIGN-theverge.md |
+| `pt.2-MVP_1.2` | 稳定 | The Verge Edition — 暗黑编辑风格前端重写，基于DESIGN-theverge.md |
+| `pt.2-MVP_1.3` | **活跃** | Claude Edition — 暖调文艺编辑风格，基于DESIGN-claude.md |
 
-### 当前工作分支：`pt.2-MVP_1.2`
+### 当前工作分支：`pt.2-MVP_1.3`
 
-最新提交：`0a0d2c2` — "v4.0: The Verge Edition — 暗黑编辑风格前端重写"
+最新提交：`24a334b` — "v5.0: Claude Edition — 暖调文艺编辑风格前端重写"
 
 ### 文件清单
 
