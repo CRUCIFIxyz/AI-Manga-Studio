@@ -119,7 +119,7 @@
 
 | 层 | 技术 |
 |----|------|
-| 前端 | HTML5 + CSS3 (马卡龙色系) + Vanilla JS |
+| 前端 | HTML5 + CSS3 (The Verge暗黑编辑风格) + Vanilla JS |
 | 后端 | Python Flask 3.0+ |
 | AI模型 | DeepSeek Chat (`deepseek-chat`) |
 | 模板引擎 | Jinja2 |
@@ -127,10 +127,18 @@
 
 ### 设计特点
 
-- **Dashboard三栏布局**：侧边栏导航 + 主内容区 + 状态面板
-- **马卡龙粉色系**：`#F598A8` 草莓 / `#FAB8C4` 蜜桃 / `#FCD5E0` 樱花 / `#A8D8C8` 薄荷
-- **高级动画**：Canvas粒子背景、流光进度条、6步骤节点依次点亮、卡片淡入动画
-- **响应式**：桌面三栏 → 平板两栏 → 手机单栏
+| 分支 | 设计语言 | 配色 | 氛围 |
+|:---|------|------|------|
+| `pt.2-MVP_1.2` (**当前**) | **The Verge 暗黑编辑风** | `#131313` 画布 + `#3cffd0` Mint + `#5200ff` UV | 开发者终端 x 科技夜店 x 极客杂志 |
+| `pt.2-MVP_1.1` | 马卡龙粉色系 | `#F598A8` 草莓 / `#FAB8C4` 蜜桃 / `#A8D8C8` 薄荷 | 少女心 x 轻甜品风 x 日系可爱 |
+
+**当前分支 (`pt.2-MVP_1.2`) 设计特性：**
+- **Masthead 巨幅 wordmark**：Anton 粗体 90px，`line-height: 0.85`
+- **StoryStream 时间线**：垂直 rail + 6步节点 + Mono 全大写编号
+- **色彩即层级**：Mint 填充强调卡，1px 边框替代阴影，零渐变
+- **Mono 标签系统**：Space Mono 全大写（`letter-spacing: 0.15em`），10-12px kicker/timestamp
+- **Deep Link Blue** (`#3860be`) 统一点击 hover，无下划线
+- **响应式**：1100/768/480 三断点
 
 ---
 
@@ -222,12 +230,14 @@ AI-Manga-Studio/
 ├── .gitignore                # Git排除规则
 │
 ├── templates/
-│   └── index.html            # 前端页面（三栏Dashboard布局）
+│   └── index.html            # 前端页面（The Verge暗黑编辑风格）
 │
 ├── static/
-│   ├── style.css             # 马卡龙色系样式 + 响应式 + 动画
-│   └── script.js             # 前端交互 + 语言切换 + 进度动画
+│   ├── style.css             # The Verge风格样式（#131313暗色画布）
+│   └── script.js             # 前端交互 + 语言切换 + SSE实时进度
 │
+├── DESIGN-theverge.md         # The Verge设计系统完整规范
+├── HANDOFF.md                 # 项目交接文档（每次会话必读）
 ├── 输出剧本/                  # 生成内容存档（不提交git）
 │   └── {题材}_{关键词}_{时间戳}/
 │       ├── 01_剧本大纲.md
@@ -348,6 +358,15 @@ curl -X POST http://127.0.0.1:5000/generate_harness \
 
 ---
 
+### v4.0 新增（2026-07-25） — The Verge Edition
+
+- **暗黑编辑风格前端重写**：基于 [DESIGN-theverge.md](DESIGN-theverge.md) 完整设计系统
+- **Canvas Black** (`#131313`) 全局暗色画布 + Jelly Mint (`#3cffd0`) + Ultraviolet (`#5200ff`)
+- **Masthead 巨幅 wordmark**：Anton 90px 粗体 + Space Mono 全大写导航
+- **StoryStream 时间线**：垂直 rail + 6步 tl-node + mono 编号标签
+- **1px 边框深度体系**：色彩即层级，零阴影，无渐变
+- **字体系统**：Anton(display) + Space Grotesk(UI) + Space Mono(mono) + Noto Sans SC(CJK)
+
 ### v3.4 新增（2026-07-25）
 
 - **Harness SSE实时进度**：前端进度条由后端6步事件驱动，每步完成精准跳跃
@@ -365,13 +384,19 @@ curl -X POST http://127.0.0.1:5000/generate_harness \
 | v3.0 | `6a9bae5` | 扩充：10种画风 + 6个视频平台 + 下拉面板UI |
 | v3.2 | `6f2760c` | 单选平台 + CRITICAL/EXACTLY/KEY RULES三重约束 |
 | v3.3 | `9c92444` | **Harness流水线**：9个MD约束文档 + 6步引擎 + 每步校验+重试 |
+| v4.0 | `80853b8` | **The Verge Edition**：暗黑编辑风格前端重写 + DESIGN-theverge.md |
 
 ### Git分支
 
-- `master` — 稳定版本
-- `pt.2-MVP_1.1` — 实验分支
+- `master` — 稳定基线版本
+- `pt.2-MVP_1.1` — 马卡龙粉色系 + Harness SSE
+- `pt.2-MVP_1.2` — **当前活跃** — The Verge 暗黑编辑风
 
 ```bash
+# 切换分支
+git checkout pt.2-MVP_1.1   # 马卡龙粉色系
+git checkout pt.2-MVP_1.2   # The Verge 暗黑系
+
 # 回滚到基线版本
 git checkout a1d7564
 
