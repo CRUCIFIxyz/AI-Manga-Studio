@@ -169,11 +169,9 @@ let generatedModules = {};
 let currentTab = null;
 let useHarness = false;  // Harness严格模式开关
 
-// ===== 页面初始化 =====
 document.addEventListener('DOMContentLoaded', () => {
   initGenreSelection();
   updateLangUI();
-  // 点击其他区域关闭语言菜单
   document.addEventListener('click', (e) => {
     const menu = document.getElementById('langMenu');
     const btn = document.getElementById('langToggle');
@@ -352,7 +350,7 @@ function navigateTo(target) {
   currentPanel = target;
 
   // 更新侧边栏
-  document.querySelectorAll('.nav-item').forEach(item => {
+  document.querySelectorAll('.nav-link').forEach(item => {
     item.classList.toggle('active', item.getAttribute('data-step') === target);
   });
 
@@ -622,7 +620,7 @@ function toggleHarnessMode() {
 }
 
 function updateStepNode(index, status) {
-  const nodes = document.querySelectorAll('.tl-node');
+  const nodes = document.querySelectorAll('.step-card');
   if (index < nodes.length) {
     nodes[index].classList.remove('active', 'done', 'retry');
     if (status === 'active') nodes[index].classList.add('active');
@@ -656,7 +654,7 @@ function resetProgressUI() {
   if (progressInterval) clearInterval(progressInterval);
   document.getElementById('progressFill').style.width = '0%';
   document.getElementById('progressPercent').textContent = '0%';
-  document.querySelectorAll('.tl-node').forEach(n => n.classList.remove('active', 'done'));
+  document.querySelectorAll('.step-card').forEach(n => n.classList.remove('active', 'done'));
   document.querySelectorAll('.check-item').forEach(n => n.classList.remove('active', 'done'));
   document.querySelectorAll('.check-icon').forEach(n => n.textContent = '○');
 }
@@ -665,7 +663,7 @@ function startProgressAnimation() {
   let progress = 0;
   const fill = document.getElementById('progressFill');
   const percent = document.getElementById('progressPercent');
-  const steps = document.querySelectorAll('.tl-node');
+  const steps = document.querySelectorAll('.step-card');
   const checks = document.querySelectorAll('.check-item');
   const genStatus = document.getElementById('genStatus');
 
@@ -723,7 +721,7 @@ function completeProgress() {
   fill.style.width = '100%';
   percent.textContent = '100%';
 
-  document.querySelectorAll('.tl-node').forEach(n => { n.classList.remove('active'); n.classList.add('done'); });
+  document.querySelectorAll('.step-card').forEach(n => { n.classList.remove('active'); n.classList.add('done'); });
   document.querySelectorAll('.check-item').forEach(c => {
     c.classList.remove('active'); c.classList.add('done');
     c.querySelector('.check-icon').textContent = '✓';
