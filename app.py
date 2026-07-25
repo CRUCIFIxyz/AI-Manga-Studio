@@ -463,7 +463,7 @@ def call_deepseek_api(system_prompt: str, user_prompt: str) -> str:
         "Content-Type": "application/json",
     }
     payload = {
-        "model": "deepseek-chat",
+        "model": "deepseek-v4-pro",
         "messages": [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
