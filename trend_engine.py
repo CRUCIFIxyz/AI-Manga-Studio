@@ -18,6 +18,47 @@ from datetime import datetime
 import requests
 
 
+def _safe_json_parse(raw_text: str, fallback: dict) -> dict:
+    """稳健地从LLM响应中提取JSON——处理常见格式瑕疵。"""
+    import re
+    candidates = []
+    code_blocks = re.findall(r"```(?:json)?\s*([\s\S]*?)```", raw_text)
+    for block in code_blocks:
+        stripped = block.strip()
+        if stripped.startswith("{"):
+            candidates.append(stripped)
+    for match in re.finditer(r"\{", raw_text):
+        start = match.start()
+        depth = 0
+        for i in range(start, len(raw_text)):
+            if raw_text[i] == "{": depth += 1
+            elif raw_text[i] == "}":
+                depth -= 1
+                if depth == 0:
+                    candidates.append(raw_text[start:i + 1])
+                    break
+    candidates.sort(key=len, reverse=True)
+    for candidate in candidates[:5]:
+        try:
+            cleaned = _clean_json(candidate)
+            return json.loads(cleaned)
+        except (json.JSONDecodeError, ValueError):
+            continue
+    return fallback
+
+
+def _clean_json(text: str) -> str:
+    """清理LLM输出的常见JSON格式错误。"""
+    import re
+    text = re.sub(r",\s*([}\]])", r"\1", text)   # 尾逗号
+    text = re.sub(r"//[^\n]*", "", text)          # 注释
+    def fix_nl(m):
+        return '"' + m.group(1).replace("\n", "\\n").replace("\r", "") + '"'
+    text = re.sub(r'"((?:[^"\\]|\\.)*)"', fix_nl, text)
+    text = text.replace("\ufeff", "")
+    return text
+
+
 def _build_trend_system_prompt() -> str:
     """构建趋势分析System Prompt。"""
     return """You are a market analyst specializing in the AI-generated short drama (漫剧) industry in China, 2025-2026.
@@ -136,12 +177,13 @@ def analyze_trends(api_key: str, api_base: str) -> dict:
         resp.raise_for_status()
         content = resp.json()["choices"][0]["message"]["content"]
 
-        # 提取JSON
-        json_match = __import__("re").search(r"\{[\s\S]*\}", content)
-        if json_match:
-            data = json.loads(json_match.group())
-        else:
-            data = {"error": "无法解析趋势分析结果", "raw": content[:500]}
+        # 稳健JSON提取（处理LLM常见格式问题）
+        data = _safe_json_parse(content, {
+            "error": "无法解析趋势分析结果",
+            "raw": content[:500],
+        })
+        if "error" in data and "raw" not in data:
+            data["raw"] = content[:500]
 
         report_md = _build_trend_report(data)
         return {

@@ -19,6 +19,47 @@ from datetime import datetime
 import requests
 
 
+def _safe_json_parse(raw_text: str, fallback: dict) -> dict:
+    """稳健地从LLM响应中提取JSON——处理常见格式瑕疵。"""
+    import re as _re
+    candidates = []
+    code_blocks = _re.findall(r"```(?:json)?\s*([\s\S]*?)```", raw_text)
+    for block in code_blocks:
+        stripped = block.strip()
+        if stripped.startswith("{"):
+            candidates.append(stripped)
+    for match in _re.finditer(r"\{", raw_text):
+        start = match.start()
+        depth = 0
+        for i in range(start, len(raw_text)):
+            if raw_text[i] == "{": depth += 1
+            elif raw_text[i] == "}":
+                depth -= 1
+                if depth == 0:
+                    candidates.append(raw_text[start:i + 1])
+                    break
+    candidates.sort(key=len, reverse=True)
+    for candidate in candidates[:5]:
+        try:
+            cleaned = _clean_json(candidate)
+            return json.loads(cleaned)
+        except (json.JSONDecodeError, ValueError):
+            continue
+    return fallback
+
+
+def _clean_json(text: str) -> str:
+    """清理LLM输出的常见JSON格式错误。"""
+    import re as _re
+    text = _re.sub(r",\s*([}\]])", r"\1", text)
+    text = _re.sub(r"//[^\n]*", "", text)
+    def fix_nl(m):
+        return '"' + m.group(1).replace("\n", "\\n").replace("\r", "") + '"'
+    text = _re.sub(r'"((?:[^"\\]|\\.)*)"', fix_nl, text)
+    text = text.replace("\ufeff", "")
+    return text
+
+
 # 已知知名IP参考列表（用于比对提示）
 KNOWN_IP_DATABASE = """
 著名动漫/漫画IP（角色名和标志性元素——比对时参考，非完整列表）：
@@ -168,18 +209,14 @@ def check_compliance(
         resp.raise_for_status()
         content = resp.json()["choices"][0]["message"]["content"]
 
-        # 提取JSON
-        json_match = re.search(r"\{[\s\S]*\}", content)
-        if json_match:
-            data = json.loads(json_match.group())
-        else:
-            data = {
-                "originality_score": 0,
-                "risk_level": "unknown",
-                "flags": [],
-                "summary": "无法解析检测结果",
-                "recommendation": "revise",
-            }
+        # 稳健JSON提取（处理LLM常见格式问题）
+        data = _safe_json_parse(content, {
+            "originality_score": 0,
+            "risk_level": "unknown",
+            "flags": [],
+            "summary": "无法解析检测结果",
+            "recommendation": "revise",
+        })
 
         report_md = _build_compliance_report(data)
         return {

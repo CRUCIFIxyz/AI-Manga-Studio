@@ -21,6 +21,86 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import requests
 
+
+def _safe_json_parse(raw_text: str, fallback: dict) -> dict:
+    """稳健地从LLM响应中提取JSON——处理常见格式瑕疵。
+
+    策略：
+    1. 优先提取```json...```代码块
+    2. 贪婪匹配最大的{...}块
+    3. 清理常见JSON语法错误（尾逗号、未转义换行等）
+    4. 失败则返回fallback
+
+    参数:
+        raw_text: LLM原始响应文本
+        fallback: 解析失败时的默认返回值
+
+    返回:
+        解析成功的dict或fallback
+    """
+    import re
+
+    candidates = []
+
+    # 策略1: 提取```json...```代码块
+    code_blocks = re.findall(r"```(?:json)?\s*([\s\S]*?)```", raw_text)
+    for block in code_blocks:
+        stripped = block.strip()
+        if stripped.startswith("{"):
+            candidates.append(stripped)
+
+    # 策略2: 查找最外层{...}（非贪婪方式遍历）
+    for match in re.finditer(r"\{", raw_text):
+        start = match.start()
+        depth = 0
+        for i in range(start, len(raw_text)):
+            if raw_text[i] == "{":
+                depth += 1
+            elif raw_text[i] == "}":
+                depth -= 1
+                if depth == 0:
+                    candidates.append(raw_text[start:i + 1])
+                    break
+
+    # 按长度降序尝试解析（最长的通常是完整的JSON）
+    candidates.sort(key=len, reverse=True)
+
+    for candidate in candidates[:5]:  # 最多尝试5个候选
+        try:
+            # 清理常见问题
+            cleaned = _clean_json(candidate)
+            return json.loads(cleaned)
+        except (json.JSONDecodeError, ValueError):
+            continue
+
+    return fallback
+
+
+def _clean_json(text: str) -> str:
+    """清理LLM输出的常见JSON格式错误。"""
+    import re
+
+    # 移除尾逗号（最常见的LLM JSON错误）
+    text = re.sub(r",\s*([}\]])", r"\1", text)
+
+    # 移除注释（// ... 到行尾）
+    text = re.sub(r"//[^\n]*", "", text)
+
+    # 修复字符串内的未转义换行符
+    # 在JSON字符串值中，\n应该被转义
+    # 简化处理：在引号内的大段文字替换实际换行为\\n
+    def fix_newlines_in_strings(m):
+        content = m.group(1)
+        content = content.replace("\n", "\\n").replace("\r", "")
+        return '"' + content + '"'
+
+    text = re.sub(r'"((?:[^"\\]|\\.)*)"', fix_newlines_in_strings, text)
+
+    # 移除BOM和其他不可见字符
+    text = text.replace("\ufeff", "")
+
+    return text
+
 # Agent定义：名称、角色描述、审查维度、权重
 REVIEW_AGENTS = [
     {
@@ -188,19 +268,15 @@ def _call_single_agent(
         resp.raise_for_status()
         content = resp.json()["choices"][0]["message"]["content"]
 
-        # 尝试提取JSON
-        json_match = __import__("re").search(r"\{[\s\S]*\}", content)
-        if json_match:
-            result = json.loads(json_match.group())
-        else:
-            result = {
-                "agent_id": agent["id"],
-                "agent_name": agent["name"],
-                "score": 5,
-                "issues": [{"severity": "medium", "module": "系统", "detail": "Agent返回格式异常，无法解析"}],
-                "suggestions": ["请手动审查此剧本"],
-                "summary": f"自动审查失败（{agent['name']}）",
-            }
+        # 稳健JSON提取（处理LLM常见格式问题）
+        result = _safe_json_parse(content, {
+            "agent_id": agent["id"],
+            "agent_name": agent["name"],
+            "score": 5,
+            "issues": [{"severity": "medium", "module": "系统", "detail": "Agent返回格式异常，无法解析"}],
+            "suggestions": ["请手动审查此剧本"],
+            "summary": f"自动审查失败（{agent['name']}）",
+        })
 
         result.setdefault("agent_id", agent["id"])
         result.setdefault("agent_name", agent["name"])
