@@ -674,30 +674,31 @@ body {
   gap: var(--s-sm);
   flex-wrap: wrap;
 }
-/* 修复btn-mint在结果操作栏中的全宽冲突 */
-.result-actions .btn-mint {
-  width: auto;
+/* 结果操作栏按钮——统一风格：slate底+亮文字+mint hover */
+.result-actions .btn-act {
   flex-shrink: 0;
-  margin-top: 0;
-  padding: 8px 18px;
-  font-size: 11px;
-  font-family: var(--font-mono);
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  border-radius: var(--r-promo);
-}
-/* outline按钮统一为Verge Dark Slate风格——slate填充+亮文字+mint边框 */
-.result-actions .btn-outline {
-  flex-shrink: 0;
-  white-space: nowrap;
+  padding: 7px 16px;
   background: var(--slate);
   color: var(--text-muted);
   border: 1px solid var(--img-frame);
+  border-radius: var(--r-promo);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: all var(--t-fast);
+  white-space: nowrap;
+  margin: 0;
 }
-.result-actions .btn-outline:hover {
+.result-actions .btn-act:hover {
   background: var(--mint);
   color: var(--text-inverted);
   border-color: var(--mint);
+}
+.result-actions .btn-act:active {
+  transform: scale(0.97);
 }
 
 /* === Tabs === */
