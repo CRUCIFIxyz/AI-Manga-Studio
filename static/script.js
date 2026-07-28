@@ -363,6 +363,9 @@ function navigateTo(target) {
     'generating': 'panelGenerating',
     'result': 'panelResult',
     'history': 'panelHistory',
+    'review': 'panelReview',
+    'trends': 'panelTrends',
+    'compliance': 'panelCompliance',
   };
   const panelId = panelMap[target];
   if (panelId) {
@@ -458,6 +461,7 @@ const STEP_NAME_TO_INDEX = {
   '分集台词': 3,
   '分镜脚本': 4,
   'AI提示词': 5,
+  'AI审核': 6,
 };
 
 async function startHarnessGeneration() {
@@ -546,7 +550,7 @@ function handleHarnessEvent(event) {
         updateStepNode(i, 'done');
         updateCheckItem(i, 'done');
       }
-      const pct = (stepIdx / 6) * 100;
+      const pct = (stepIdx / 7) * 100;
       document.getElementById('progressFill').style.width = pct + '%';
       document.getElementById('progressPercent').textContent = Math.round(pct) + '%';
 
@@ -558,6 +562,7 @@ function handleHarnessEvent(event) {
           '分集台词': '正在编写台词...',
           '分镜脚本': '正在绘制分镜...',
           'AI提示词': '正在优化AI提示词...',
+          'AI审核': '正在进行AI综合审核...',
         },
         en: {
           '剧本大纲': 'Generating outline...',
@@ -566,6 +571,7 @@ function handleHarnessEvent(event) {
           '分集台词': 'Writing dialogue...',
           '分镜脚本': 'Creating storyboard...',
           'AI提示词': 'Optimizing AI prompts...',
+          'AI审核': 'Running AI review...',
         },
       };
       const genStatus = document.getElementById('genStatus');
@@ -574,7 +580,7 @@ function handleHarnessEvent(event) {
     } else if (event.status === 'done') {
       updateStepNode(stepIdx, 'done');
       updateCheckItem(stepIdx, 'done');
-      const pct = ((stepIdx + 1) / 6) * 100;
+      const pct = ((stepIdx + 1) / 7) * 100;
       document.getElementById('progressFill').style.width = pct + '%';
       document.getElementById('progressPercent').textContent = Math.round(pct) + '%';
 
@@ -896,6 +902,350 @@ function showToast(message, isError = false) {
   toast.classList.add('show');
   setTimeout(() => toast.classList.remove('show'), 2500);
 }
+
+// ===== v5.0 新增功能 =====
+
+let currentReviewModules = {};
+let currentReviewGenre = '';
+let lastReviewResult = null;
+let lastComplianceResult = null;
+
+function showReviewPanel() {
+  navigateTo('review');
+  // 如果当前有已生成的模块，自动加载
+  if (Object.keys(generatedModules).length > 0) {
+    currentReviewModules = generatedModules;
+    // 获取题材（从生成上下文推断）
+    const genreRadio = document.querySelector('input[name="genre"]:checked');
+    currentReviewGenre = genreRadio ? genreRadio.closest('.genre-chip')?.querySelector('span:last-child')?.textContent || '校园奇幻' : '校园奇幻';
+    populateReviewScriptList();
+  } else {
+    loadAvailableScripts();
+  }
+}
+
+async function loadAvailableScripts() {
+  try {
+    const resp = await fetch('/list');
+    const data = await resp.json();
+    const list = document.getElementById('reviewScriptList');
+    if (data.length === 0) {
+      list.innerHTML = '<p class="tile-meta">暂无已生成的剧本，请先生成剧本</p>';
+      return;
+    }
+    list.innerHTML = data.slice(0, 10).map((item, idx) => `
+      <div class="review-script-option ${idx === 0 ? 'selected' : ''}" 
+           data-folder="${item.name}" onclick="selectReviewScript('${item.name}', this)">
+        <span class="script-name">${item.name}</span>
+        <span class="script-meta">${item.count} files</span>
+      </div>
+    `).join('');
+    if (data.length > 0) {
+      document.getElementById('btnStartReview').style.display = 'inline-block';
+    }
+  } catch (err) {
+    console.error('加载剧本列表失败:', err);
+  }
+}
+
+function selectReviewScript(folderName, el) {
+  document.querySelectorAll('.review-script-option').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  // 加载剧本内容
+  fetch(`/export_json/${folderName}`)
+    .then(r => r.json())
+    .then(data => {
+      currentReviewModules = data.modules || {};
+      document.getElementById('btnStartReview').style.display = 'inline-block';
+    })
+    .catch(err => {
+      showToast('加载剧本失败: ' + err.message, true);
+    });
+}
+
+function populateReviewScriptList() {
+  const list = document.getElementById('reviewScriptList');
+  const moduleKeys = Object.keys(currentReviewModules);
+  if (moduleKeys.length === 0) {
+    list.innerHTML = '<p class="tile-meta">当前没有可审核的剧本</p>';
+    return;
+  }
+  list.innerHTML = `
+    <div class="review-script-option selected">
+      <span class="script-name">当前生成的剧本 (${moduleKeys.length}个模块)</span>
+      <span class="script-meta">${moduleKeys.slice(0,3).join(', ')}...</span>
+    </div>
+  `;
+  document.getElementById('btnStartReview').style.display = 'inline-block';
+}
+
+async function startReview() {
+  if (Object.keys(currentReviewModules).length === 0) {
+    showToast('请先选择要审核的剧本', true);
+    return;
+  }
+
+  document.getElementById('reviewInputCard').style.display = 'none';
+  document.getElementById('reviewLoadingCard').style.display = 'block';
+  document.getElementById('reviewResultCard').style.display = 'none';
+
+  try {
+    const resp = await fetch('/review', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        modules: currentReviewModules,
+        genre_cn: currentReviewGenre,
+      }),
+    });
+    const data = await resp.json();
+
+    document.getElementById('reviewLoadingCard').style.display = 'none';
+    document.getElementById('reviewResultCard').style.display = 'block';
+
+    if (data.success) {
+      lastReviewResult = data;
+      renderReviewResult(data);
+      // 如果审核结果在result页面，也更新07 tab
+      if (data.report_md) {
+        generatedModules['07_审核报告'] = data.report_md;
+        document.getElementById('tab07').style.display = '';
+      }
+    } else {
+      document.getElementById('reviewOverall').innerHTML = 
+        `<p style="color:var(--tile-pink)">审核失败: ${data.error || '未知错误'}</p>`;
+    }
+  } catch (err) {
+    document.getElementById('reviewLoadingCard').style.display = 'none';
+    document.getElementById('reviewResultCard').style.display = 'block';
+    document.getElementById('reviewOverall').innerHTML = 
+      `<p style="color:var(--tile-pink)">审核请求失败: ${err.message}</p>`;
+  }
+}
+
+function renderReviewResult(data) {
+  // 总分
+  const score = data.overall_score || 0;
+  const scoreClass = score >= 8 ? 'high' : (score >= 6 ? 'mid' : 'low');
+  document.getElementById('reviewOverall').innerHTML = `
+    <div class="review-overall">
+      <span class="review-score-big" style="color:${score >= 8 ? 'var(--mint)' : (score >= 6 ? 'var(--tile-yellow)' : 'var(--tile-pink)')}">${score}</span>
+      <div class="review-score-label">
+        <strong>/10 综合评分</strong><br>
+        ${data.summary || data.score_label || ''}
+      </div>
+    </div>
+  `;
+
+  // Agent卡片
+  const agents = data.agents || [];
+  document.getElementById('reviewAgents').innerHTML = agents.map(a => {
+    const s = a.score || 0;
+    const sc = s >= 8 ? 'high' : (s >= 6 ? 'mid' : 'low');
+    const issues = (a.issues || []).map(i => {
+      const sv = i.severity || 'low';
+      return `<div class="issue-sev-${sv === 'high' ? 'high' : (sv === 'medium' ? 'med' : 'low')}">• [${sv.toUpperCase()}] ${i.module || ''}: ${i.detail || ''}</div>`;
+    }).join('');
+    const suggestions = (a.suggestions || []).map(s => `<div style="color:var(--mint);margin-top:4px;">→ ${s}</div>`).join('');
+    return `
+      <div class="review-agent-card">
+        <div class="agent-header">
+          <span class="agent-name">${a.agent_name || ''}</span>
+          <span class="agent-score ${sc}">${s}/10</span>
+        </div>
+        <div class="agent-issues">
+          ${issues}
+          ${suggestions}
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // Markdown报告
+  if (data.report_md) {
+    document.getElementById('reviewReportMd').innerHTML = renderMarkdown(data.report_md);
+  }
+}
+
+function runReviewFromResult() {
+  if (Object.keys(generatedModules).length === 0) {
+    showToast('请先生成剧本', true);
+    return;
+  }
+  currentReviewModules = generatedModules;
+  const genreRadio = document.querySelector('input[name="genre"]:checked');
+  currentReviewGenre = genreRadio ? genreRadio.closest('.genre-chip')?.querySelector('span:last-child')?.textContent || '校园奇幻' : '校园奇幻';
+  
+  navigateTo('review');
+  populateReviewScriptList();
+  startReview();
+}
+
+async function runComplianceFromResult() {
+  if (Object.keys(generatedModules).length === 0) {
+    showToast('请先生成剧本', true);
+    return;
+  }
+  await runCompliance(generatedModules);
+}
+
+async function runComplianceAfterReview() {
+  if (Object.keys(currentReviewModules).length === 0) {
+    showToast('请先进行审核', true);
+    return;
+  }
+  await runCompliance(currentReviewModules);
+}
+
+async function runCompliance(modules) {
+  navigateTo('compliance');
+  document.getElementById('complianceLoadingCard').style.display = 'block';
+  document.getElementById('complianceResultCard').style.display = 'none';
+
+  try {
+    const resp = await fetch('/compliance', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ modules: modules }),
+    });
+    const data = await resp.json();
+
+    document.getElementById('complianceLoadingCard').style.display = 'none';
+    document.getElementById('complianceResultCard').style.display = 'block';
+    lastComplianceResult = data;
+
+    if (data.success) {
+      renderComplianceResult(data);
+    } else {
+      document.getElementById('complianceScore').innerHTML = 
+        `<p style="color:var(--tile-pink)">检测失败: ${data.error || '未知错误'}</p>`;
+    }
+  } catch (err) {
+    document.getElementById('complianceLoadingCard').style.display = 'none';
+    document.getElementById('complianceResultCard').style.display = 'block';
+    document.getElementById('complianceScore').innerHTML = 
+      `<p style="color:var(--tile-pink)">检测请求失败: ${err.message}</p>`;
+  }
+}
+
+function renderComplianceResult(data) {
+  const score = data.originality_score || 0;
+  const risk = data.risk_level || 'unknown';
+  const rec = { pass: 'pass', revise: 'revise', reject: 'reject' }[data.recommendation] || 'revise';
+  
+  document.getElementById('complianceScore').innerHTML = `
+    <div class="compliance-score-display">
+      <span class="compliance-score-num ${rec}">${score}</span>
+      <div>
+        <div style="margin-bottom:8px;">
+          <span class="compliance-risk-badge ${risk}">${risk.toUpperCase()} RISK</span>
+          <span style="margin-left:8px;font-size:13px;color:var(--text-secondary);">原创度评分 /100</span>
+        </div>
+        <div style="font-size:13px;color:var(--text-muted);">${data.summary || ''}</div>
+      </div>
+    </div>
+  `;
+
+  if (data.report_md) {
+    document.getElementById('complianceReportMd').innerHTML = renderMarkdown(data.report_md);
+  }
+}
+
+async function loadTrends() {
+  navigateTo('trends');
+  document.getElementById('trendsPromptCard').style.display = 'none';
+  document.getElementById('trendsLoadingCard').style.display = 'block';
+  document.getElementById('trendsResultCard').style.display = 'none';
+
+  try {
+    const resp = await fetch('/trends');
+    const data = await resp.json();
+
+    document.getElementById('trendsLoadingCard').style.display = 'none';
+    document.getElementById('trendsResultCard').style.display = 'block';
+
+    if (data.success && data.report_md) {
+      document.getElementById('trendsReportMd').innerHTML = renderMarkdown(data.report_md);
+    } else {
+      document.getElementById('trendsReportMd').innerHTML = 
+        `<p style="color:var(--tile-pink)">趋势分析失败: ${data.error || '未知错误'}</p>`;
+    }
+  } catch (err) {
+    document.getElementById('trendsLoadingCard').style.display = 'none';
+    document.getElementById('trendsResultCard').style.display = 'block';
+    document.getElementById('trendsReportMd').innerHTML = 
+      `<p style="color:var(--tile-pink)">请求失败: ${err.message}</p>`;
+  }
+}
+
+function downloadZip() {
+  // 从resultInfo中提取folder名
+  const resultInfo = document.getElementById('resultInfo').textContent;
+  const folderMatch = resultInfo.match(/[^\s:]+\d{8}_\d{6}/);
+  if (!folderMatch) {
+    showToast('无法找到剧本文件夹', true);
+    return;
+  }
+  const folder = folderMatch[0];
+  window.open(`/download_zip/${folder}`, '_blank');
+}
+
+function copyReviewReport() {
+  if (!lastReviewResult || !lastReviewResult.report_md) {
+    showToast('暂无审核报告', true);
+    return;
+  }
+  navigator.clipboard.writeText(lastReviewResult.report_md).then(() => {
+    showToast('审核报告已复制到剪贴板 ✓');
+  }).catch(() => {
+    showToast('复制失败，请手动复制', true);
+  });
+}
+
+// 简单Markdown到HTML渲染
+function renderMarkdown(md) {
+  if (!md) return '';
+  let html = md
+    .replace(/^### (.+)$/gm, '<h3 style="color:var(--text-primary);margin:16px 0 8px;font-size:15px;">$1</h3>')
+    .replace(/^## (.+)$/gm, '<h2 style="color:var(--mint);margin:20px 0 10px;font-size:17px;border-bottom:1px solid var(--img-frame);padding-bottom:6px;">$1</h2>')
+    .replace(/^# (.+)$/gm, '<h1 style="color:var(--mint);margin:24px 0 12px;font-size:20px;">$1</h1>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong style="color:var(--text-primary)">$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/`([^`]+)`/g, '<code style="background:var(--img-frame);padding:1px 5px;border-radius:2px;font-family:var(--font-mono);font-size:12px;">$1</code>')
+    .replace(/^- (.+)$/gm, '<li style="color:var(--text-secondary);margin:2px 0 2px 16px;font-size:13px;">$1</li>')
+    .replace(/\n\n/g, '</p><p style="color:var(--text-secondary);font-size:13px;line-height:1.7;margin:8px 0;">')
+    .replace(/\n/g, '<br>');
+  html = '<p style="color:var(--text-secondary);font-size:13px;line-height:1.7;margin:8px 0;">' + html + '</p>';
+  // 表格简单渲染
+  html = html.replace(/\|(.+)\|/g, (match) => {
+    const cells = match.split('|').filter(c => c.trim());
+    return '<tr>' + cells.map(c => {
+      const trimmed = c.trim();
+      if (trimmed.match(/^[-:]+$/)) return '';
+      return `<td style="padding:4px 12px;border:1px solid var(--img-frame);font-size:12px;color:var(--text-secondary);">${trimmed}</td>`;
+    }).join('') + '</tr>';
+  });
+  html = html.replace(/(<tr>.*<\/tr>\n?)+/g, (match) => {
+    return '<table style="border-collapse:collapse;margin:8px 0;width:100%;">' + match + '</table>';
+  });
+  return html;
+}
+
+// 覆盖resetToInput以清理新面板
+const _originalResetToInput = resetToInput;
+resetToInput = function() {
+  _originalResetToInput();
+  // 清理审核和合规面板
+  document.getElementById('reviewResultCard').style.display = 'none';
+  document.getElementById('reviewInputCard').style.display = 'block';
+  document.getElementById('reviewLoadingCard').style.display = 'none';
+  document.getElementById('complianceResultCard').style.display = 'none';
+  document.getElementById('complianceLoadingCard').style.display = 'none';
+  document.getElementById('tab07').style.display = 'none';
+  lastReviewResult = null;
+  lastComplianceResult = null;
+  currentReviewModules = {};
+};
 
 // ===== 工具函数 =====
 function sleep(ms) {

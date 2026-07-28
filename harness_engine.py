@@ -150,6 +150,13 @@ def run_pipeline(
             "file": "STEP_06_prompts.md",
             "requires": ["02_characters", "03_scenes", "05_storyboard"],
         },
+        {
+            "id": "07_review",
+            "name": "AI审核",
+            "file": "STEP_07_review.md",
+            "requires": ["01_outline", "02_characters", "03_scenes", "04_dialogue", "05_storyboard", "06_prompts"],
+            "optional": True,  # 审核步骤为可选，失败不阻塞流水线
+        },
     ]
 
     modules = {}
@@ -158,6 +165,7 @@ def run_pipeline(
     for step in steps:
         step_id = step["id"]
         step_name = step["name"]
+        is_optional = step.get("optional", False)
 
         if progress_callback:
             progress_callback(step_name, "running", "正在生成...")
@@ -168,24 +176,34 @@ def run_pipeline(
         )
 
         content = None
-        for attempt in range(MAX_RETRIES + 1):
+        max_retries = 0 if is_optional else MAX_RETRIES  # 可选步骤不重试
+        for attempt in range(max_retries + 1):
             try:
                 content = _call_api(system_prompt, user_prompt, api_key, api_base)
                 # 校验
                 valid, reason = _validate_step(step_id, content, state, modules, extracted)
                 if valid:
                     break
-                if progress_callback and attempt < MAX_RETRIES:
-                    progress_callback(step_name, "retry", f"校验失败({reason})，重试 {attempt+1}/{MAX_RETRIES}")
+                if progress_callback and attempt < max_retries:
+                    progress_callback(step_name, "retry", f"校验失败({reason})，重试 {attempt+1}/{max_retries}")
             except Exception as e:
-                if attempt < MAX_RETRIES:
+                if is_optional:
                     if progress_callback:
-                        progress_callback(step_name, "retry", f"API异常({e})，重试 {attempt+1}/{MAX_RETRIES}")
+                        progress_callback(step_name, "skipped", f"可选步骤跳过: {e}")
+                    content = None
+                    break
+                if attempt < max_retries:
+                    if progress_callback:
+                        progress_callback(step_name, "retry", f"API异常({e})，重试 {attempt+1}/{max_retries}")
                     time.sleep(2)
                 else:
-                    return {"success": False, "error": f"Step {step_name} 失败(重试{MAX_RETRIES}次): {e}"}
+                    return {"success": False, "error": f"Step {step_name} 失败(重试{max_retries}次): {e}"}
 
         if content is None:
+            if is_optional:
+                if progress_callback:
+                    progress_callback(step_name, "skipped", "可选步骤已跳过")
+                continue
             return {"success": False, "error": f"Step {step_name} 生成失败"}
 
         modules[step_id] = content
@@ -203,6 +221,7 @@ def run_pipeline(
         "04_dialogue": "04_分集台词",
         "05_storyboard": "05_分镜脚本",
         "06_prompts": "06_AI提示词",
+        "07_review": "07_审核报告",
     }
     result_modules = {module_map[k]: v for k, v in modules.items()}
 
@@ -284,6 +303,23 @@ def _build_user_prompt_for_step(step_file: str, state: dict, modules: dict, extr
             f"Generate platform-specific AI prompts for the above shots."
         )
 
+    if "review" in step_file:
+        # STEP 07: 审核——将全部模块内容汇总
+        all_content_parts = []
+        for key in ["01_outline", "02_characters", "03_scenes", "04_dialogue",
+                     "05_storyboard", "06_prompts"]:
+            if key in modules:
+                text = modules[key]
+                if len(text) > 1000:
+                    text = text[:1000] + "\n\n... (截断)"
+                all_content_parts.append(f"### {key}\n\n{text}")
+        all_modules_text = "\n\n---\n\n".join(all_content_parts)
+        return (
+            f"【题材】{genre}\n\n"
+            f"【完整剧本包】\n\n{all_modules_text}\n\n"
+            f"请对以上剧本包进行综合质量审核，输出审核报告。"
+        )
+
     return "Generate the output as specified in the system prompt."
 
 
@@ -360,6 +396,12 @@ def _validate_step(step_id: str, content: str, state: dict, modules: dict, extra
             return False, "未包含Midjourney格式"
         if vid_p == "pika" and "Pika" not in content:
             return False, "未包含Pika格式"
+        return True, ""
+
+    if step_id == "07_review":
+        # 审核步骤为可选，仅做基础检查
+        if len(content) < 100:
+            return False, "审核报告内容过短"
         return True, ""
 
     return True, ""

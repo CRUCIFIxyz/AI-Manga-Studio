@@ -9,6 +9,8 @@ import re
 import json
 import time
 import threading
+import zipfile
+import io
 from queue import Queue
 from datetime import datetime
 from pathlib import Path
@@ -19,6 +21,11 @@ import requests
 
 # Harness引擎
 from harness_engine import run_pipeline
+
+# v5.0 新增引擎
+from review_engine import run_review
+from trend_engine import analyze_trends
+from compliance_engine import check_compliance
 
 # 加载环境变量
 load_dotenv()
@@ -625,7 +632,8 @@ def generate():
         # 按顺序返回模块内容
         ordered_keys = [
             "01_剧本大纲", "02_角色设定", "03_场景描述",
-            "04_分集台词", "05_分镜脚本", "06_AI提示词"
+            "04_分集台词", "05_分镜脚本", "06_AI提示词",
+            "07_审核报告",
         ]
         for key in ordered_keys:
             if key in modules:
@@ -811,6 +819,126 @@ def _generate_harness_sse(genre_cn, user_idea, episode_count, art_style, art_dat
             "Cache-Control": "no-cache",
             "X-Accel-Buffering": "no",
             "Connection": "keep-alive",
+        },
+    )
+
+
+# ===== v5.0 新路由 =====
+
+@app.route("/review", methods=["POST"])
+def review_script():
+    """多Agent AI审核——对已生成的剧本进行5维度并行审查。"""
+    data = request.get_json()
+    modules = data.get("modules", {})
+    genre_cn = data.get("genre_cn", "校园奇幻")
+
+    if not modules:
+        return jsonify({"error": "请提供剧本模块内容"}), 400
+
+    try:
+        result = run_review(
+            modules=modules,
+            genre_cn=genre_cn,
+            api_key=DEEPSEEK_API_KEY,
+            api_base=DEEPSEEK_API_BASE,
+        )
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": f"审核失败: {str(e)}"}), 500
+
+
+@app.route("/trends")
+def trends():
+    """热门题材分析——获取当前AI漫剧市场趋势。"""
+    try:
+        result = analyze_trends(
+            api_key=DEEPSEEK_API_KEY,
+            api_base=DEEPSEEK_API_BASE,
+        )
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": f"趋势分析失败: {str(e)}"}), 500
+
+
+@app.route("/compliance", methods=["POST"])
+def compliance_check():
+    """原创合规检测——检查剧本是否存在IP侵权风险。"""
+    data = request.get_json()
+    modules = data.get("modules", {})
+
+    if not modules:
+        return jsonify({"error": "请提供剧本模块内容"}), 400
+
+    try:
+        result = check_compliance(
+            modules=modules,
+            api_key=DEEPSEEK_API_KEY,
+            api_base=DEEPSEEK_API_BASE,
+        )
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": f"合规检测失败: {str(e)}"}), 500
+
+
+@app.route("/download_zip/<folder_name>")
+def download_zip(folder_name):
+    """下载剧本文件夹为ZIP压缩包。"""
+    folder_path = OUTPUT_DIR / folder_name
+    if not folder_path.exists() or not folder_path.is_dir():
+        return jsonify({"error": "文件夹不存在"}), 404
+
+    # 安全检查：防止路径穿越
+    folder_path = folder_path.resolve()
+    if not str(folder_path).startswith(str(OUTPUT_DIR.resolve())):
+        return jsonify({"error": "非法路径"}), 403
+
+    memory_file = io.BytesIO()
+    with zipfile.ZipFile(memory_file, "w", zipfile.ZIP_DEFLATED) as zf:
+        for file_path in sorted(folder_path.rglob("*")):
+            if file_path.is_file():
+                arcname = file_path.relative_to(folder_path)
+                zf.write(file_path, str(arcname))
+
+    memory_file.seek(0)
+    return Response(
+        memory_file.getvalue(),
+        mimetype="application/zip",
+        headers={
+            "Content-Disposition": f"attachment; filename={folder_name}.zip",
+            "Content-Type": "application/zip",
+        },
+    )
+
+
+@app.route("/export_json/<folder_name>")
+def export_json(folder_name):
+    """导出剧本为结构化JSON格式。"""
+    folder_path = OUTPUT_DIR / folder_name
+    if not folder_path.exists() or not folder_path.is_dir():
+        return jsonify({"error": "文件夹不存在"}), 404
+
+    # 安全检查
+    folder_path = folder_path.resolve()
+    if not str(folder_path).startswith(str(OUTPUT_DIR.resolve())):
+        return jsonify({"error": "非法路径"}), 403
+
+    modules = {}
+    for file_path in sorted(folder_path.iterdir()):
+        if file_path.suffix == ".md":
+            modules[file_path.stem] = file_path.read_text(encoding="utf-8")
+
+    manifest = {
+        "folder": folder_name,
+        "exported_at": datetime.now().isoformat(),
+        "module_count": len(modules),
+        "modules": modules,
+    }
+
+    return Response(
+        json.dumps(manifest, ensure_ascii=False, indent=2),
+        mimetype="application/json",
+        headers={
+            "Content-Disposition": f"attachment; filename={folder_name}.json",
         },
     )
 

@@ -922,3 +922,146 @@ body {
   .masthead-nav .nav-item { font-size: 11px; padding: 6px 10px; }
   .nav-num { display: none; }
 }
+
+/* ===== v5.0 新增：审核/趋势/合规面板样式 ===== */
+
+/* 审核总分 */
+.review-overall {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--img-frame);
+}
+.review-score-big {
+  font-family: var(--font-mono);
+  font-size: 64px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--mint);
+}
+.review-score-label {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+/* 审核Agent卡片 */
+.review-agents {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+.review-agent-card {
+  background: var(--slate);
+  border: 1px solid var(--img-frame);
+  border-radius: var(--r-nested);
+  padding: 16px;
+}
+.review-agent-card .agent-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.review-agent-card .agent-name {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.05em;
+  color: var(--text-primary);
+  text-transform: uppercase;
+}
+.review-agent-card .agent-score {
+  font-family: var(--font-mono);
+  font-size: 28px;
+  font-weight: 700;
+}
+.agent-score.high { color: var(--mint); }
+.agent-score.mid  { color: var(--tile-yellow); }
+.agent-score.low  { color: var(--tile-pink); }
+
+.review-agent-card .agent-issues {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+.review-agent-card .agent-issues .issue-sev-high { color: var(--tile-pink); font-weight: 600; }
+.review-agent-card .agent-issues .issue-sev-med  { color: var(--tile-yellow); }
+.review-agent-card .agent-issues .issue-sev-low  { color: var(--text-muted); }
+
+/* 合规检测分数 */
+.compliance-score-display {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 24px 0;
+  border-bottom: 1px solid var(--img-frame);
+}
+.compliance-score-num {
+  font-family: var(--font-mono);
+  font-size: 56px;
+  font-weight: 700;
+  line-height: 1;
+}
+.compliance-score-num.pass { color: var(--mint); }
+.compliance-score-num.revise { color: var(--tile-yellow); }
+.compliance-score-num.reject { color: var(--tile-pink); }
+
+.compliance-risk-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: var(--r-pill);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+.compliance-risk-badge.low { background: rgba(60,255,208,0.15); color: var(--mint); border: 1px solid var(--mint-border); }
+.compliance-risk-badge.medium { background: rgba(255,216,0,0.15); color: var(--tile-yellow); border: 1px solid var(--tile-yellow); }
+.compliance-risk-badge.high { background: rgba(255,94,156,0.15); color: var(--tile-pink); border: 1px solid var(--tile-pink); }
+.compliance-risk-badge.critical { background: rgba(255,30,30,0.2); color: #ff1e1e; border: 1px solid #ff1e1e; }
+
+/* 剧本选择列表 */
+.review-script-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+.review-script-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--slate);
+  border: 1px solid var(--img-frame);
+  border-radius: var(--r-input);
+  cursor: pointer;
+  transition: border-color var(--t-fast);
+}
+.review-script-option:hover { border-color: var(--mint-border); }
+.review-script-option.selected { border-color: var(--mint); background: rgba(60,255,208,0.05); }
+.review-script-option .script-name { flex: 1; font-size: 13px; }
+.review-script-option .script-meta { font-size: 11px; color: var(--text-secondary); font-family: var(--font-mono); }
+
+/* 趋势面板强化 */
+.trend-keyword-tag {
+  display: inline-block;
+  padding: 3px 10px;
+  background: var(--slate);
+  border: 1px solid var(--img-frame);
+  border-radius: var(--r-pill);
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 2px;
+}
+.trend-heat-bar {
+  display: inline-block;
+  height: 14px;
+  background: var(--mint);
+  border-radius: 2px;
+  vertical-align: middle;
+}
