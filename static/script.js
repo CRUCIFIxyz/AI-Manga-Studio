@@ -63,6 +63,7 @@ const i18n = {
     check_dialogue: "分集台词",
     check_storyboard: "分镜脚本",
     check_prompts: "AI提示词",
+    check_review: "AI审核",
     qa_copy_prompts: "复制AI提示词",
     qa_copy_storyboard: "复制分镜脚本",
     qa_copy_outline: "复制剧本大纲",
@@ -82,7 +83,54 @@ const i18n = {
     config_harness: "严格模式",
     config_harness_off: "快速模式",
     config_harness_desc: "6步流水线校验，质量更高，耗时约3-5分钟",
+
+    // v5.0 审核/趋势/合规
+    nav_review: "AI审核",
+    nav_trends: "趋势分析",
+    review_title: "AI剧本审核",
+    review_subtitle: "多Agent并行审查——剧情/角色/台词/格式/安全 5维度评分",
+    review_select: "选择要审核的剧本",
+    review_empty_hint: "请先生成剧本后再进行审核，或从历史记录中选择",
+    review_start_btn: "开始审核",
+    review_loading_title: "审查Agent正在并行分析",
+    review_loading_sub: "5个Agent同时工作，预计10-20秒",
+    review_result_title: "审核结果",
+    review_score_label: "/10 综合评分",
+    review_btn_compliance: "合规检测",
+    review_btn_copy: "复制报告",
+    compliance_title: "原创合规检测",
+    compliance_subtitle: "IP侵权风险检查——30+知名IP数据库比对",
+    compliance_result_title: "检测结果",
+    compliance_loading_title: "正在检测原创合规性",
+    compliance_loading_sub: "比对已知IP数据库，预计5-10秒",
+    compliance_score_label: "/100 原创度",
+    compliance_fail: "检测失败",
+    trends_title: "市场趋势",
+    trends_subtitle: "AI漫剧市场热门趋势分析——助你选题更精准",
+    trends_loading_title: "正在分析市场趋势",
+    trends_loading_sub: "AI分析中，预计10-20秒",
+    trends_result_title: "市场分析",
+    trends_prompt_title: "获取最新趋势",
+    trends_prompt_desc: "AI将分析2025-2026年中国AI漫剧市场热门题材、关键词和题材组合",
+    trends_btn: "分析市场趋势",
+    trends_refresh: "刷新分析",
+    trends_fail: "趋势分析失败",
+    step_review: "AI审核",
+    tab_review: "审核报告",
+    btn_zip: "ZIP下载",
+    btn_review: "AI审核",
+    btn_compliance: "合规检测",
+    review_no_script: "当前没有可审核的剧本",
+    review_current_script: "当前生成的剧本",
+    review_modules_count: "个模块",
+    review_fail: "审核请求失败",
+    compliance_req_fail: "检测请求失败",
+    review_no_report: "暂无审核报告",
+    copy_fail: "复制失败，请手动复制",
+    zip_no_folder: "无法找到剧本文件夹",
+    review_load_fail: "加载剧本失败",
   },
+
   en: {
     brand_name: "AI Manga Studio",
     brand_sub: "Script Generator MVP",
@@ -140,6 +188,7 @@ const i18n = {
     check_dialogue: "Dialogue",
     check_storyboard: "Storyboard",
     check_prompts: "AI Prompts",
+    check_review: "AI Review",
     qa_copy_prompts: "Copy AI Prompts",
     qa_copy_storyboard: "Copy Storyboard",
     qa_copy_outline: "Copy Outline",
@@ -159,6 +208,52 @@ const i18n = {
     config_harness: "Strict Mode",
     config_harness_off: "Fast Mode",
     config_harness_desc: "6-step pipeline with validation, higher quality, ~3-5 min",
+
+    // v5.0 Review / Trends / Compliance
+    nav_review: "AI Review",
+    nav_trends: "Trends",
+    review_title: "AI Script Review",
+    review_subtitle: "5-agent parallel review — Plot / Characters / Dialogue / Format / Safety",
+    review_select: "Select Script to Review",
+    review_empty_hint: "Generate a script first, or select from history",
+    review_start_btn: "Start Review",
+    review_loading_title: "Review Agents Analyzing",
+    review_loading_sub: "5 agents working in parallel, ~10-20s",
+    review_result_title: "Review Results",
+    review_score_label: "/10 Overall Score",
+    review_btn_compliance: "Compliance",
+    review_btn_copy: "Copy Report",
+    compliance_title: "Copyright Compliance",
+    compliance_subtitle: "IP infringement risk check — cross-referencing 30+ known IPs",
+    compliance_result_title: "Compliance Results",
+    compliance_loading_title: "Checking Originality",
+    compliance_loading_sub: "Cross-referencing known IP database, ~5-10s",
+    compliance_score_label: "/100 Originality",
+    compliance_fail: "Check Failed",
+    trends_title: "Market Trends",
+    trends_subtitle: "AI manga drama market trend analysis — smarter topic selection",
+    trends_loading_title: "Analyzing Market Trends",
+    trends_loading_sub: "AI-powered market intelligence, ~10-20s",
+    trends_result_title: "Market Analysis",
+    trends_prompt_title: "Get Latest Trends",
+    trends_prompt_desc: "AI analyzes 2025-2026 Chinese AI manga drama market: trending genres, keywords, and combos",
+    trends_btn: "Analyze Trends",
+    trends_refresh: "Refresh",
+    trends_fail: "Trend analysis failed",
+    step_review: "AI Review",
+    tab_review: "Review Report",
+    btn_zip: "ZIP Download",
+    btn_review: "AI Review",
+    btn_compliance: "Compliance",
+    review_no_script: "No scripts available for review",
+    review_current_script: "Current Script",
+    review_modules_count: "modules",
+    review_fail: "Review request failed",
+    compliance_req_fail: "Compliance request failed",
+    review_no_report: "No review report available",
+    copy_fail: "Copy failed, please copy manually",
+    zip_no_folder: "Cannot locate script folder",
+    review_load_fail: "Failed to load script",
   }
 };
 
@@ -930,7 +1025,7 @@ async function loadAvailableScripts() {
     const data = await resp.json();
     const list = document.getElementById('reviewScriptList');
     if (data.length === 0) {
-      list.innerHTML = '<p class="tile-meta">暂无已生成的剧本，请先生成剧本</p>';
+      list.innerHTML = `<p class="tile-meta">${t('review_empty_hint')}</p>`;
       return;
     }
     list.innerHTML = data.slice(0, 10).map((item, idx) => `
@@ -959,7 +1054,7 @@ function selectReviewScript(folderName, el) {
       document.getElementById('btnStartReview').style.display = 'inline-block';
     })
     .catch(err => {
-      showToast('加载剧本失败: ' + err.message, true);
+      showToast(t('review_load_fail') + ': ' + err.message, true);
     });
 }
 
@@ -967,12 +1062,12 @@ function populateReviewScriptList() {
   const list = document.getElementById('reviewScriptList');
   const moduleKeys = Object.keys(currentReviewModules);
   if (moduleKeys.length === 0) {
-    list.innerHTML = '<p class="tile-meta">当前没有可审核的剧本</p>';
+    list.innerHTML = `<p class="tile-meta">${t('review_no_script')}</p>`;
     return;
   }
   list.innerHTML = `
     <div class="review-script-option selected">
-      <span class="script-name">当前生成的剧本 (${moduleKeys.length}个模块)</span>
+      <span class="script-name">${t('review_current_script')} (${moduleKeys.length}${t('review_modules_count')})</span>
       <span class="script-meta">${moduleKeys.slice(0,3).join(', ')}...</span>
     </div>
   `;
@@ -981,7 +1076,7 @@ function populateReviewScriptList() {
 
 async function startReview() {
   if (Object.keys(currentReviewModules).length === 0) {
-    showToast('请先选择要审核的剧本', true);
+    showToast(t('review_no_script'), true);
     return;
   }
 
@@ -1013,13 +1108,13 @@ async function startReview() {
       }
     } else {
       document.getElementById('reviewOverall').innerHTML = 
-        `<p style="color:var(--tile-pink)">审核失败: ${data.error || '未知错误'}</p>`;
+        `<p style="color:var(--tile-pink)">${t('review_fail')}: ${data.error || ''}</p>`;
     }
   } catch (err) {
     document.getElementById('reviewLoadingCard').style.display = 'none';
     document.getElementById('reviewResultCard').style.display = 'block';
     document.getElementById('reviewOverall').innerHTML = 
-      `<p style="color:var(--tile-pink)">审核请求失败: ${err.message}</p>`;
+      `<p style="color:var(--tile-pink)">${t('review_fail')}: ${err.message}</p>`;
   }
 }
 
@@ -1031,7 +1126,7 @@ function renderReviewResult(data) {
     <div class="review-overall">
       <span class="review-score-big ${scoreClass}">${score}</span>
       <div class="review-score-label">
-        <strong>/10</strong><br>
+        <strong>${t('review_score_label')}</strong><br>
         ${data.summary || data.score_label || ''}
       </div>
     </div>
@@ -1119,13 +1214,13 @@ async function runCompliance(modules) {
       renderComplianceResult(data);
     } else {
       document.getElementById('complianceScore').innerHTML = 
-        `<p style="color:var(--tile-pink)">检测失败: ${data.error || '未知错误'}</p>`;
+        `<p style="color:var(--tile-pink)">${t('compliance_fail')}: ${data.error || ''}</p>`;
     }
   } catch (err) {
     document.getElementById('complianceLoadingCard').style.display = 'none';
     document.getElementById('complianceResultCard').style.display = 'block';
     document.getElementById('complianceScore').innerHTML = 
-      `<p style="color:var(--tile-pink)">检测请求失败: ${err.message}</p>`;
+      `<p style="color:var(--tile-pink)">${t('compliance_req_fail')}: ${err.message}</p>`;
   }
 }
 
@@ -1140,7 +1235,7 @@ function renderComplianceResult(data) {
       <div>
         <div style="margin-bottom:8px;">
           <span class="compliance-risk-badge ${risk}">${risk.toUpperCase()}</span>
-          <span class="compliance-score-meta" style="margin-left:8px;">&nbsp;/100</span>
+          <span class="compliance-score-meta" style="margin-left:8px;">${t('compliance_score_label')}</span>
         </div>
         <div class="compliance-score-summary">${data.summary || ''}</div>
       </div>
@@ -1171,22 +1266,21 @@ async function loadTrends() {
         '<div class="review-md">' + renderMarkdownRaw(data.report_md) + '</div>';
     } else {
       document.getElementById('trendsReportMd').innerHTML = 
-        `<p style="color:var(--tile-pink)">趋势分析失败: ${data.error || '未知错误'}</p>`;
+        `<p style="color:var(--tile-pink)">${t('trends_fail')}: ${data.error || ''}</p>`;
     }
   } catch (err) {
     document.getElementById('trendsLoadingCard').style.display = 'none';
     document.getElementById('trendsResultCard').style.display = 'block';
     document.getElementById('trendsReportMd').innerHTML = 
-      `<p style="color:var(--tile-pink)">请求失败: ${err.message}</p>`;
+      `<p style="color:var(--tile-pink)">${t('trends_fail')}: ${err.message}</p>`;
   }
 }
 
 function downloadZip() {
-  // 从resultInfo中提取folder名
   const resultInfo = document.getElementById('resultInfo').textContent;
   const folderMatch = resultInfo.match(/[^\s:]+\d{8}_\d{6}/);
   if (!folderMatch) {
-    showToast('无法找到剧本文件夹', true);
+    showToast(t('zip_no_folder'), true);
     return;
   }
   const folder = folderMatch[0];
@@ -1195,13 +1289,13 @@ function downloadZip() {
 
 function copyReviewReport() {
   if (!lastReviewResult || !lastReviewResult.report_md) {
-    showToast('暂无审核报告', true);
+    showToast(t('review_no_report'), true);
     return;
   }
   navigator.clipboard.writeText(lastReviewResult.report_md).then(() => {
-    showToast('审核报告已复制到剪贴板 ✓');
+    showToast(t('toast_copied'));
   }).catch(() => {
-    showToast('复制失败，请手动复制', true);
+    showToast(t('copy_fail'), true);
   });
 }
 
