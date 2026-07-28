@@ -686,9 +686,18 @@ body {
   letter-spacing: 0.12em;
   border-radius: var(--r-promo);
 }
+/* outline按钮统一为Verge Dark Slate风格——slate填充+亮文字+mint边框 */
 .result-actions .btn-outline {
   flex-shrink: 0;
   white-space: nowrap;
+  background: var(--slate);
+  color: var(--text-muted);
+  border: 1px solid var(--img-frame);
+}
+.result-actions .btn-outline:hover {
+  background: var(--mint);
+  color: var(--text-inverted);
+  border-color: var(--mint);
 }
 
 /* === Tabs === */
