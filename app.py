@@ -900,11 +900,15 @@ def download_zip(folder_name):
                 zf.write(file_path, str(arcname))
 
     memory_file.seek(0)
+    # RFC 5987 编码中文文件名（HTTP头仅支持ASCII/latin-1）
+    from urllib.parse import quote
+    safe_name = folder_name.replace(" ", "_")
+    encoded_name = quote(safe_name)
     return Response(
         memory_file.getvalue(),
         mimetype="application/zip",
         headers={
-            "Content-Disposition": f"attachment; filename={folder_name}.zip",
+            "Content-Disposition": f"attachment; filename=\"{encoded_name}.zip\"; filename*=UTF-8''{encoded_name}.zip",
             "Content-Type": "application/zip",
         },
     )
@@ -934,11 +938,15 @@ def export_json(folder_name):
         "modules": modules,
     }
 
+    # RFC 5987 编码中文文件名
+    from urllib.parse import quote
+    safe_name = folder_name.replace(" ", "_")
+    encoded_name = quote(safe_name)
     return Response(
         json.dumps(manifest, ensure_ascii=False, indent=2),
         mimetype="application/json",
         headers={
-            "Content-Disposition": f"attachment; filename={folder_name}.json",
+            "Content-Disposition": f"attachment; filename=\"{encoded_name}.json\"; filename*=UTF-8''{encoded_name}.json",
         },
     )
 
