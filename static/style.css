@@ -1143,9 +1143,6 @@ body {
 .review-md strong { color: var(--text-primary); }
 .review-md code { background: var(--img-frame); padding: 1px 5px; border-radius: 2px; font-family: var(--font-mono); font-size: 11px; color: var(--mint); }
 .review-md li  { color: var(--text-secondary); font-size: 12px; margin: 2px 0 2px 16px; }
-.review-md table { border-collapse: collapse; margin: 8px 0; width: 100%; font-size: 11px; }
-.review-md td, .review-md th { padding: 4px 10px; border: 1px solid var(--img-frame); color: var(--text-secondary); font-size: 11px; }
-.review-md th { color: var(--text-primary); background: var(--slate); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.05em; }
 
 /* 趋势面板关键词标签 */
 .review-md .trend-keyword {
@@ -1168,4 +1165,88 @@ body {
   display: flex;
   gap: var(--s-sm);
   margin-top: var(--s-lg);
+}
+
+/* ===== v5.0 内容容器溢出控制 ===== */
+.story-item {
+  overflow: hidden;        /* 防止子元素溢出卡片圆角 */
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+.content-render,
+.markdown-body {
+  overflow-x: auto;        /* 宽表格横向滚动 */
+  max-width: 100%;
+  word-break: break-word;
+}
+
+/* 表格容器——独立横向滚动 */
+.content-render table,
+.markdown-body table,
+.review-md table {
+  display: block;           /* 使overflow-x生效 */
+  overflow-x: auto;
+  max-width: 100%;
+  border-collapse: collapse;
+  margin: 8px 0;
+  font-size: 10px;
+  white-space: nowrap;      /* 防止单元格内换行撑高行 */
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 表格还原display:table以正常渲染，外层scroll生效 */
+.content-render table,
+.markdown-body table,
+.review-md table {
+  display: table;
+  width: max-content;
+  min-width: 100%;
+}
+
+/* 容器级横向滚动——包裹表格的div */
+.review-md .table-wrap {
+  overflow-x: auto;
+  max-width: 100%;
+  margin: 8px 0;
+  border: 1px solid var(--img-frame);
+  border-radius: var(--r-input);
+}
+
+.review-md td,
+.review-md th,
+.content-render td,
+.content-render th,
+.markdown-body td,
+.markdown-body th {
+  padding: 3px 8px;
+  border: 1px solid var(--img-frame);
+  color: var(--text-secondary);
+  font-size: 10px;
+  max-width: 180px;         /* 限制单列最大宽度 */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.review-md th,
+.content-render th,
+.markdown-body th {
+  color: var(--text-primary);
+  background: var(--slate);
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 10px;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+/* 长内容单元格允许换行 */
+.review-md td.long-text,
+.content-render td.long-text,
+.markdown-body td.long-text {
+  white-space: normal;
+  min-width: 120px;
+  max-width: 240px;
 }

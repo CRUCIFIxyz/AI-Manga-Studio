@@ -1319,16 +1319,18 @@ function renderMarkdownRaw(md) {
 
   html = '<p>' + html + '</p>';
 
-  // 表格
+  // 表格——包裹在 .table-wrap 中以支持横向滚动
   html = html.replace(/\|(.+)\|/g, (match) => {
     const cells = match.split('|').filter(c => c.trim());
     return '<tr>' + cells.map(c => {
       const trimmed = c.trim();
       if (trimmed.match(/^[-:]+$/)) return '';
-      return '<td>' + trimmed + '</td>';
+      // 长文本列使用 long-text 类
+      const cls = trimmed.length > 40 ? ' class="long-text"' : '';
+      return `<td${cls}>${trimmed}</td>`;
     }).join('') + '</tr>';
   });
-  html = html.replace(/(<tr>.*<\/tr>\n?)+/g, '<table>$&</table>');
+  html = html.replace(/(<tr>.*<\/tr>\n?)+/g, '<div class="table-wrap"><table>$&</table></div>');
   return html;
 }
 
