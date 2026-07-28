@@ -300,7 +300,18 @@ function updateLangUI() {
   document.querySelectorAll('[data-i18n]').forEach(el => {
     const key = el.getAttribute('data-i18n');
     if (dict[key]) {
-      el.textContent = dict[key];
+      // 如果元素内部只有文本节点，直接替换textContent；否则只更新直接文本
+      if (el.children.length === 0 || el.tagName === 'BUTTON') {
+        el.textContent = dict[key];
+      } else {
+        // 有子元素时，只更新第一个文本节点
+        for (const node of el.childNodes) {
+          if (node.nodeType === Node.TEXT_NODE && node.textContent.trim()) {
+            node.textContent = dict[key];
+            break;
+          }
+        }
+      }
     }
   });
 

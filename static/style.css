@@ -674,6 +674,22 @@ body {
   gap: var(--s-sm);
   flex-wrap: wrap;
 }
+/* 修复btn-mint在结果操作栏中的全宽冲突 */
+.result-actions .btn-mint {
+  width: auto;
+  flex-shrink: 0;
+  margin-top: 0;
+  padding: 8px 18px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  border-radius: var(--r-promo);
+}
+.result-actions .btn-outline {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
 
 /* === Tabs === */
 .tabs-container {
@@ -1160,7 +1176,6 @@ body {
 }
 
 /* 结果面板review/compliance按钮间隙 */
-.result-actions { gap: var(--s-sm); }
 .panel-actions-row {
   display: flex;
   gap: var(--s-sm);
