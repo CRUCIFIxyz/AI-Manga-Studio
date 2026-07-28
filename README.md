@@ -74,6 +74,7 @@
 | ④ 分集台词 | 逐集完整对话（300-500字/集）+ 结尾钩子 | 中文 |
 | ⑤ 分镜脚本 | 逐镜表格（镜号/景别/画面/运镜/时长/转场）| 中文 |
 | ⑥ AI提示词 | **选中平台的专属英文prompt——直接复制即用** | **英文** |
+| ⑦ AI审核报告 | Harness严格模式自动生成——5维度评分+修改建议 | 中文 |
 
 ### 🌐 双语界面
 
@@ -224,11 +225,15 @@ python app.py
 
 ```
 AI-Manga-Studio/
-├── app.py                    # Flask后端（路由 + API调用 + 文件保存）
+├── app.py                    # Flask后端（路由 + API调用 + 文件保存 + v5.0审核/趋势/合规路由）
 ├── requirements.txt          # Python依赖
 ├── .env                      # API密钥（不提交git）
 ├── .gitignore                # Git排除规则
 │
+├── review_engine.py          # v5.0 多Agent审核引擎（5个Agent并行审查）
+├── trend_engine.py           # v5.0 热门题材市场趋势分析引擎
+├── compliance_engine.py      # v5.0 原创合规检测引擎（IP侵权检查）
+├── harness_engine.py         # Harness流水线引擎（v5.0扩展为7步）
 ├── templates/
 │   └── index.html            # 前端页面（The Verge暗黑编辑风格）
 │
@@ -245,7 +250,8 @@ AI-Manga-Studio/
 │       ├── 03_场景描述.md
 │       ├── 04_分集台词.md
 │       ├── 05_分镜脚本.md
-│       └── 06_AI提示词.md
+│       ├── 06_AI提示词.md
+│       └── 07_审核报告.md      (Harness严格模式自动生成)
 │
 ├── harness/                   # Harness流水线约束体系
 │   ├── PIPELINE.md            # 6步架构 + 数据传递定义
@@ -257,7 +263,8 @@ AI-Manga-Studio/
 │       ├── STEP_03_scenes.md
 │       ├── STEP_04_dialogue.md
 │       ├── STEP_05_storyboard.md
-│       └── STEP_06_prompts.md
+│       ├── STEP_06_prompts.md
+│       └── STEP_07_review.md   (v5.0 审核步骤)
 │
 ├── harness_engine.py          # 流水线引擎（~400行）
 ├── DEVELOPMENT_SPEC.md        # 开发规范文档
@@ -322,16 +329,16 @@ Duration: 10 seconds
 ### 架构
 
 ```
-STEP 01 大纲 ──→ STEP 02 角色 ──→ STEP 03 场景 ──→ STEP 04 台词 ──→ STEP 05 分镜 ──→ STEP 06 提示词
-    │               │               │               │               │               │
-    └── 提取大纲 ──→ 注入角色名 ──→ 注入场景名 ──→ 注入外貌Map ──→ 注入分镜表 ──→ 注入平台选择
+STEP 01 大纲 ──→ STEP 02 角色 ──→ STEP 03 场景 ──→ STEP 04 台词 ──→ STEP 05 分镜 ──→ STEP 06 提示词 ──→ STEP 07 审核
+    │               │               │               │               │               │               │
+    └── 提取大纲 ──→ 注入角色名 ──→ 注入场景名 ──→ 注入外貌Map ──→ 注入分镜表 ──→ 注入平台选择 ──→ 综合审核报告
 ```
 
 ### 约束文档体系
 
 | 文档 | 内容 | 约束数 |
 |------|------|:--:|
-| `harness/PIPELINE.md` | 6步架构 + 数据传递 + 三层校验体系 | — |
+| `harness/PIPELINE.md` | 7步架构 + 数据传递 + 三层校验体系 | — |
 | `harness/CONSTRAINTS.md` | 7条全局约束（语言/原创/钩子/时长/格式/角色完整性/安全） | 7 |
 | `harness/CONSISTENCY.md` | 6条跨模块一致性规则（角色名/外貌/场景名/集数/平台/钩子） | 6 |
 | `harness/steps/STEP_01~06.md` | 每步的Input/SystemPrompt/Output/Validation | 36条校验规则 |
@@ -340,11 +347,12 @@ STEP 01 大纲 ──→ STEP 02 角色 ──→ STEP 03 场景 ──→ STEP 
 
 | | `/generate`（快速） | `/generate_harness`（严格） |
 |:---|:---:|:---:|
-| API调用 | 1次 | 6次 |
+| API调用 | 1次 | 7次 |
 | 耗时 | ~60秒 | ~3-5分钟 |
 | 一致性保障 | prompt约束 | 前置数据强制注入 ✅ |
 | 每步校验 | 无 | 最多重试2次 ✅ |
-| 前端进度 | 模拟动画 | SSE实时推送 ✅ |
+| 自动审核 | 无 | STEP_07自动5维度审核 ✅ |
+| 前端进度 | 模拟动画 | SSE实时推送 7步 ✅ |
 | UI开关 | 默认"快速模式" | 切换"严格模式" |
 
 ### 使用方式
@@ -357,6 +365,15 @@ curl -X POST http://127.0.0.1:5000/generate_harness \
 ```
 
 ---
+
+### v5.0 新增（2026-07-28） — Multi-Agent Review & Compliance Edition
+
+- **多Agent AI审核系统**：5个专业Agent并行审查——剧情(25%)、角色(25%)、台词(20%)、格式(15%)、安全(15%)
+- **热门题材分析**：AI驱动的漫剧市场趋势分析，热门题材排行+高频关键词+推荐组合
+- **原创合规检测**：30+知名IP数据库比对，原创度评分(0-100)+风险等级+修改建议
+- **标准化剧本包增强**：ZIP一键打包下载、JSON结构化导出、Harness第7步自动审核
+- **5个新API路由**：`/review` `/trends` `/compliance` `/download_zip/<folder>` `/export_json/<folder>`
+- **新增引擎模块**：`review_engine.py`(230行) `trend_engine.py`(190行) `compliance_engine.py`(230行)
 
 ### v4.0 新增（2026-07-25） — The Verge Edition
 
@@ -385,6 +402,7 @@ curl -X POST http://127.0.0.1:5000/generate_harness \
 | v3.2 | `6f2760c` | 单选平台 + CRITICAL/EXACTLY/KEY RULES三重约束 |
 | v3.3 | `9c92444` | **Harness流水线**：9个MD约束文档 + 6步引擎 + 每步校验+重试 |
 | v4.0 | `80853b8` | **The Verge Edition**：暗黑编辑风格前端重写 + DESIGN-theverge.md |
+| v5.0 | `d133413` | **Multi-Agent Review**：5Agent审核 + 趋势分析 + 合规检测 + ZIP/JSON导出 |
 
 ### Git分支
 

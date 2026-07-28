@@ -1,16 +1,18 @@
 # AI漫剧剧本生成器 MVP 开发规范
 
-> 版本：v1.0 | 日期：2026-07-23 | 项目：全球数字创业 第二阶段
+> 版本：v5.0 | 日期：2026-07-28 | 项目：全球数字创业 第二阶段
 
 ---
 
 ## 一、项目概述
 
 ### 1.1 产品定位
-AI漫剧标准化剧本"一键生成器"——用户输入题材+创意想法 → 输出一整套可直接用于即梦/Pika/PixVerse等AI视频工具的标准化剧本包。
+AI漫剧标准化剧本"一键生成器"——用户输入题材+创意想法 → 输出一整套可直接用于即梦/Pika/PixVerse等AI视频工具的标准化剧本包。v5.0新增多Agent审核、趋势分析、合规检测功能。
 
 ### 1.2 核心价值
-- **AI原生格式**：输出内容内置五大模块（大纲/人设/台词/分镜/AI提示词），打开就能跑
+- **AI原生格式**：输出内容内置7大模块（大纲/人设/台词/分镜/AI提示词/审核报告），打开就能跑
+- **多Agent审核**：5个专业Agent并行审查，综合评分+修改建议
+- **原创合规检测**：30+IP数据库比对，版权风险预警
 - **即梦/Pika就绪**：⑥AI提示词模块生成可直接复制的英文prompt
 - **批量产出**：一次API调用产出完整剧本包
 
@@ -35,14 +37,31 @@ AI漫剧标准化剧本"一键生成器"——用户输入题材+创意想法 �
 任务pt.2/mvp/
 ├── .env                              # API密钥配置（不提交git）
 ├── .gitignore                        # 排除 .env 和 __pycache__
-├── app.py                            # Flask后端主程序
+├── app.py                            # Flask后端主程序（v5.0含10条路由）
+├── review_engine.py                  # v5.0 多Agent审核引擎（5Agent并行）
+├── trend_engine.py                   # v5.0 热门题材市场趋势分析引擎
+├── compliance_engine.py              # v5.0 原创合规检测引擎（IP比对）
+├── harness_engine.py                 # Harness流水线引擎（v5.0扩展7步）
 ├── requirements.txt                  # Python依赖清单
+├── README.md                         # 项目文档
 ├── DEVELOPMENT_SPEC.md               # 本规范文档
 ├── templates/
-│   └── index.html                    # 单页面前端（Jinja2模板）
+│   └── index.html                    # 单页面前端（v5.0含审核/趋势/合规面板）
 ├── static/
-│   ├── style.css                     # 全局样式（马卡龙色系）
-│   └── script.js                     # 前端交互与动画
+│   ├── style.css                     # 全局样式（v5.0含审核/合规/趋势样式）
+│   └── script.js                     # 前端交互（v5.0含审核/趋势/合规/下载功能）
+├── harness/                          # Harness流水线约束体系
+│   ├── PIPELINE.md                   # 7步架构 + 数据传递定义
+│   ├── CONSTRAINTS.md                # 7条全局约束
+│   ├── CONSISTENCY.md                # 6条跨模块一致性规则
+│   └── steps/
+│       ├── STEP_01_outline.md
+│       ├── STEP_02_characters.md
+│       ├── STEP_03_scenes.md
+│       ├── STEP_04_dialogue.md
+│       ├── STEP_05_storyboard.md
+│       ├── STEP_06_prompts.md
+│       └── STEP_07_review.md         # v5.0 审核步骤模板
 └── 输出剧本/                         # 生成内容存档目录
     └── {题材}_{核心要素}_{时间戳}/
         ├── 01_剧本大纲.md
@@ -50,7 +69,8 @@ AI漫剧标准化剧本"一键生成器"——用户输入题材+创意想法 �
         ├── 03_场景描述.md
         ├── 04_分集台词.md
         ├── 05_分镜脚本.md
-        └── 06_AI提示词.md
+        ├── 06_AI提示词.md
+        └── 07_审核报告.md            # Harness严格模式自动生成
 ```
 
 ---
