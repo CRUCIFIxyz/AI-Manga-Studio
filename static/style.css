@@ -925,12 +925,12 @@ body {
 
 /* ===== v5.0 新增：审核/趋势/合规面板样式 ===== */
 
-/* 审核总分 */
+/* 审核总分 — 使用 Verge 色板 */
 .review-overall {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 16px 0;
+  gap: var(--s-xl);
+  padding: var(--s-lg) 0;
   border-bottom: 1px solid var(--img-frame);
 }
 .review-score-big {
@@ -938,64 +938,103 @@ body {
   font-size: 64px;
   font-weight: 700;
   line-height: 1;
-  color: var(--mint);
+  letter-spacing: -0.02em;
 }
+.review-score-big.score-high { color: var(--mint); }
+.review-score-big.score-mid  { color: var(--tile-yellow); }
+.review-score-big.score-low  { color: var(--tile-pink); }
+
 .review-score-label {
-  font-size: 14px;
+  font-size: 13px;
   color: var(--text-secondary);
   line-height: 1.5;
 }
+.review-score-label strong {
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 12px;
+}
 
-/* 审核Agent卡片 */
+/* 审核Agent卡片网格 */
 .review-agents {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 12px;
-  margin-top: 16px;
+  gap: var(--s-md);
+  margin-top: var(--s-lg);
 }
+
+/* Agent卡片 — 使用 Verge slate surface */
 .review-agent-card {
   background: var(--slate);
   border: 1px solid var(--img-frame);
   border-radius: var(--r-nested);
-  padding: 16px;
+  padding: var(--s-lg);
 }
 .review-agent-card .agent-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 10px;
+  margin-bottom: var(--s-sm);
 }
 .review-agent-card .agent-name {
   font-family: var(--font-mono);
-  font-size: 13px;
-  letter-spacing: 0.05em;
-  color: var(--text-primary);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: var(--text-muted);
   text-transform: uppercase;
 }
 .review-agent-card .agent-score {
   font-family: var(--font-mono);
   font-size: 28px;
   font-weight: 700;
+  letter-spacing: -0.02em;
 }
-.agent-score.high { color: var(--mint); }
-.agent-score.mid  { color: var(--tile-yellow); }
-.agent-score.low  { color: var(--tile-pink); }
+.review-agent-card .agent-score.score-high { color: var(--mint); }
+.review-agent-card .agent-score.score-mid  { color: var(--tile-yellow); }
+.review-agent-card .agent-score.score-low  { color: var(--tile-pink); }
 
-.review-agent-card .agent-issues {
-  font-size: 13px;
+/* Agent建议内容 */
+.review-agent-card .agent-detail {
+  font-size: 12px;
   color: var(--text-secondary);
   line-height: 1.6;
 }
-.review-agent-card .agent-issues .issue-sev-high { color: var(--tile-pink); font-weight: 600; }
-.review-agent-card .agent-issues .issue-sev-med  { color: var(--tile-yellow); }
-.review-agent-card .agent-issues .issue-sev-low  { color: var(--text-muted); }
+.review-agent-card .agent-detail .sev-high {
+  color: var(--tile-pink);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+}
+.review-agent-card .agent-detail .sev-med {
+  color: var(--tile-yellow);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.review-agent-card .agent-detail .sev-low {
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.review-agent-card .agent-suggestion {
+  color: var(--mint);
+  font-size: 12px;
+  margin-top: var(--s-xs);
+}
 
-/* 合规检测分数 */
+/* 合规检测分数展示 */
 .compliance-score-display {
   display: flex;
   align-items: center;
-  gap: 20px;
-  padding: 24px 0;
+  gap: var(--s-xl);
+  padding: var(--s-xl) 0;
   border-bottom: 1px solid var(--img-frame);
 }
 .compliance-score-num {
@@ -1003,38 +1042,70 @@ body {
   font-size: 56px;
   font-weight: 700;
   line-height: 1;
+  letter-spacing: -0.02em;
 }
-.compliance-score-num.pass { color: var(--mint); }
-.compliance-score-num.revise { color: var(--tile-yellow); }
-.compliance-score-num.reject { color: var(--tile-pink); }
+.compliance-score-num.score-pass   { color: var(--mint); }
+.compliance-score-num.score-revise { color: var(--tile-yellow); }
+.compliance-score-num.score-reject { color: var(--tile-pink); }
 
+/* 风险徽章 — 使用 Verge pill-tag 规范（纯色填充，非透明覆盖） */
 .compliance-risk-badge {
   display: inline-block;
-  padding: 4px 12px;
+  padding: 3px 10px;
   border-radius: var(--r-pill);
   font-family: var(--font-mono);
-  font-size: 12px;
-  letter-spacing: 0.08em;
+  font-size: 10px;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  font-weight: 700;
+  font-weight: 600;
+  border: 1px solid transparent;
 }
-.compliance-risk-badge.low { background: rgba(60,255,208,0.15); color: var(--mint); border: 1px solid var(--mint-border); }
-.compliance-risk-badge.medium { background: rgba(255,216,0,0.15); color: var(--tile-yellow); border: 1px solid var(--tile-yellow); }
-.compliance-risk-badge.high { background: rgba(255,94,156,0.15); color: var(--tile-pink); border: 1px solid var(--tile-pink); }
-.compliance-risk-badge.critical { background: rgba(255,30,30,0.2); color: #ff1e1e; border: 1px solid #ff1e1e; }
+.compliance-risk-badge.low {
+  color: var(--text-inverted);
+  background: var(--mint);
+  border-color: var(--mint-border);
+}
+.compliance-risk-badge.medium {
+  color: var(--text-inverted);
+  background: var(--tile-yellow);
+  border-color: var(--tile-yellow);
+}
+.compliance-risk-badge.high {
+  color: var(--white);
+  background: var(--tile-pink);
+  border-color: var(--tile-pink);
+}
+.compliance-risk-badge.critical {
+  color: var(--white);
+  background: var(--ultraviolet);
+  border-color: var(--ultra-dark);
+}
+
+.compliance-score-meta {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.compliance-score-summary {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
 
 /* 剧本选择列表 */
 .review-script-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--s-sm);
   max-height: 200px;
   overflow-y: auto;
 }
 .review-script-option {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--s-md);
   padding: 10px 14px;
   background: var(--slate);
   border: 1px solid var(--img-frame);
@@ -1042,26 +1113,59 @@ body {
   cursor: pointer;
   transition: border-color var(--t-fast);
 }
-.review-script-option:hover { border-color: var(--mint-border); }
-.review-script-option.selected { border-color: var(--mint); background: rgba(60,255,208,0.05); }
-.review-script-option .script-name { flex: 1; font-size: 13px; }
-.review-script-option .script-meta { font-size: 11px; color: var(--text-secondary); font-family: var(--font-mono); }
+.review-script-option:hover {
+  border-color: var(--mint-border);
+}
+.review-script-option.selected {
+  border-color: var(--mint);
+  background: rgba(60, 255, 208, 0.04);
+}
+.review-script-option .script-name {
+  flex: 1;
+  font-size: 13px;
+  font-family: var(--font-cn);
+  color: var(--text-primary);
+}
+.review-script-option .script-meta {
+  font-size: 10px;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
 
-/* 趋势面板强化 */
-.trend-keyword-tag {
+/* ===== v5.0 Markdown渲染辅助类 ===== */
+.review-md { font-size: 13px; color: var(--text-secondary); line-height: 1.7; }
+.review-md h1 { color: var(--mint); font-size: 18px; margin: 20px 0 10px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.08em; border-bottom: 1px solid var(--img-frame); padding-bottom: 6px; }
+.review-md h2 { color: var(--mint); font-size: 15px; margin: 16px 0 8px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.06em; }
+.review-md h3 { color: var(--text-primary); font-size: 13px; margin: 12px 0 6px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.05em; }
+.review-md p  { font-size: 13px; color: var(--text-secondary); line-height: 1.7; margin: 6px 0; }
+.review-md strong { color: var(--text-primary); }
+.review-md code { background: var(--img-frame); padding: 1px 5px; border-radius: 2px; font-family: var(--font-mono); font-size: 11px; color: var(--mint); }
+.review-md li  { color: var(--text-secondary); font-size: 12px; margin: 2px 0 2px 16px; }
+.review-md table { border-collapse: collapse; margin: 8px 0; width: 100%; font-size: 11px; }
+.review-md td, .review-md th { padding: 4px 10px; border: 1px solid var(--img-frame); color: var(--text-secondary); font-size: 11px; }
+.review-md th { color: var(--text-primary); background: var(--slate); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.05em; }
+
+/* 趋势面板关键词标签 */
+.review-md .trend-keyword {
   display: inline-block;
-  padding: 3px 10px;
+  padding: 2px 8px;
   background: var(--slate);
   border: 1px solid var(--img-frame);
   border-radius: var(--r-pill);
-  font-size: 12px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
   color: var(--text-muted);
-  margin: 2px;
+  margin: 1px;
 }
-.trend-heat-bar {
-  display: inline-block;
-  height: 14px;
-  background: var(--mint);
-  border-radius: 2px;
-  vertical-align: middle;
+
+/* 结果面板review/compliance按钮间隙 */
+.result-actions { gap: var(--s-sm); }
+.panel-actions-row {
+  display: flex;
+  gap: var(--s-sm);
+  margin-top: var(--s-lg);
 }

@@ -1026,12 +1026,12 @@ async function startReview() {
 function renderReviewResult(data) {
   // 总分
   const score = data.overall_score || 0;
-  const scoreClass = score >= 8 ? 'high' : (score >= 6 ? 'mid' : 'low');
+  const scoreClass = score >= 8 ? 'score-high' : (score >= 6 ? 'score-mid' : 'score-low');
   document.getElementById('reviewOverall').innerHTML = `
     <div class="review-overall">
-      <span class="review-score-big" style="color:${score >= 8 ? 'var(--mint)' : (score >= 6 ? 'var(--tile-yellow)' : 'var(--tile-pink)')}">${score}</span>
+      <span class="review-score-big ${scoreClass}">${score}</span>
       <div class="review-score-label">
-        <strong>/10 综合评分</strong><br>
+        <strong>/10</strong><br>
         ${data.summary || data.score_label || ''}
       </div>
     </div>
@@ -1041,19 +1041,19 @@ function renderReviewResult(data) {
   const agents = data.agents || [];
   document.getElementById('reviewAgents').innerHTML = agents.map(a => {
     const s = a.score || 0;
-    const sc = s >= 8 ? 'high' : (s >= 6 ? 'mid' : 'low');
+    const sc = s >= 8 ? 'score-high' : (s >= 6 ? 'score-mid' : 'score-low');
     const issues = (a.issues || []).map(i => {
       const sv = i.severity || 'low';
-      return `<div class="issue-sev-${sv === 'high' ? 'high' : (sv === 'medium' ? 'med' : 'low')}">• [${sv.toUpperCase()}] ${i.module || ''}: ${i.detail || ''}</div>`;
+      return `<div><span class="sev-${sv === 'high' ? 'high' : (sv === 'medium' ? 'med' : 'low')}">${sv.toUpperCase()}</span> ${i.module || ''}: ${i.detail || ''}</div>`;
     }).join('');
-    const suggestions = (a.suggestions || []).map(s => `<div style="color:var(--mint);margin-top:4px;">→ ${s}</div>`).join('');
+    const suggestions = (a.suggestions || []).map(s => `<div class="agent-suggestion">${s}</div>`).join('');
     return `
       <div class="review-agent-card">
         <div class="agent-header">
           <span class="agent-name">${a.agent_name || ''}</span>
           <span class="agent-score ${sc}">${s}/10</span>
         </div>
-        <div class="agent-issues">
+        <div class="agent-detail">
           ${issues}
           ${suggestions}
         </div>
@@ -1063,7 +1063,8 @@ function renderReviewResult(data) {
 
   // Markdown报告
   if (data.report_md) {
-    document.getElementById('reviewReportMd').innerHTML = renderMarkdown(data.report_md);
+    document.getElementById('reviewReportMd').innerHTML =
+      '<div class="review-md">' + renderMarkdownRaw(data.report_md) + '</div>';
   }
 }
 
@@ -1131,23 +1132,24 @@ async function runCompliance(modules) {
 function renderComplianceResult(data) {
   const score = data.originality_score || 0;
   const risk = data.risk_level || 'unknown';
-  const rec = { pass: 'pass', revise: 'revise', reject: 'reject' }[data.recommendation] || 'revise';
+  const recClass = data.recommendation === 'pass' ? 'score-pass' : (data.recommendation === 'reject' ? 'score-reject' : 'score-revise');
   
   document.getElementById('complianceScore').innerHTML = `
     <div class="compliance-score-display">
-      <span class="compliance-score-num ${rec}">${score}</span>
+      <span class="compliance-score-num ${recClass}">${score}</span>
       <div>
         <div style="margin-bottom:8px;">
-          <span class="compliance-risk-badge ${risk}">${risk.toUpperCase()} RISK</span>
-          <span style="margin-left:8px;font-size:13px;color:var(--text-secondary);">原创度评分 /100</span>
+          <span class="compliance-risk-badge ${risk}">${risk.toUpperCase()}</span>
+          <span class="compliance-score-meta" style="margin-left:8px;">&nbsp;/100</span>
         </div>
-        <div style="font-size:13px;color:var(--text-muted);">${data.summary || ''}</div>
+        <div class="compliance-score-summary">${data.summary || ''}</div>
       </div>
     </div>
   `;
 
   if (data.report_md) {
-    document.getElementById('complianceReportMd').innerHTML = renderMarkdown(data.report_md);
+    document.getElementById('complianceReportMd').innerHTML =
+      '<div class="review-md">' + renderMarkdownRaw(data.report_md) + '</div>';
   }
 }
 
@@ -1165,7 +1167,8 @@ async function loadTrends() {
     document.getElementById('trendsResultCard').style.display = 'block';
 
     if (data.success && data.report_md) {
-      document.getElementById('trendsReportMd').innerHTML = renderMarkdown(data.report_md);
+      document.getElementById('trendsReportMd').innerHTML =
+        '<div class="review-md">' + renderMarkdownRaw(data.report_md) + '</div>';
     } else {
       document.getElementById('trendsReportMd').innerHTML = 
         `<p style="color:var(--tile-pink)">趋势分析失败: ${data.error || '未知错误'}</p>`;
@@ -1202,32 +1205,36 @@ function copyReviewReport() {
   });
 }
 
-// 简单Markdown到HTML渲染
-function renderMarkdown(md) {
+// Markdown到HTML渲染（纯语义标签，样式由 .review-md CSS类控制）
+function renderMarkdownRaw(md) {
   if (!md) return '';
   let html = md
-    .replace(/^### (.+)$/gm, '<h3 style="color:var(--text-primary);margin:16px 0 8px;font-size:15px;">$1</h3>')
-    .replace(/^## (.+)$/gm, '<h2 style="color:var(--mint);margin:20px 0 10px;font-size:17px;border-bottom:1px solid var(--img-frame);padding-bottom:6px;">$1</h2>')
-    .replace(/^# (.+)$/gm, '<h1 style="color:var(--mint);margin:24px 0 12px;font-size:20px;">$1</h1>')
-    .replace(/\*\*(.+?)\*\*/g, '<strong style="color:var(--text-primary)">$1</strong>')
+    // 标题
+    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+    .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+    // 内联
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    .replace(/`([^`]+)`/g, '<code style="background:var(--img-frame);padding:1px 5px;border-radius:2px;font-family:var(--font-mono);font-size:12px;">$1</code>')
-    .replace(/^- (.+)$/gm, '<li style="color:var(--text-secondary);margin:2px 0 2px 16px;font-size:13px;">$1</li>')
-    .replace(/\n\n/g, '</p><p style="color:var(--text-secondary);font-size:13px;line-height:1.7;margin:8px 0;">')
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    // 列表
+    .replace(/^- (.+)$/gm, '<li>$1</li>')
+    // 段落
+    .replace(/\n\n/g, '</p><p>')
     .replace(/\n/g, '<br>');
-  html = '<p style="color:var(--text-secondary);font-size:13px;line-height:1.7;margin:8px 0;">' + html + '</p>';
-  // 表格简单渲染
+
+  html = '<p>' + html + '</p>';
+
+  // 表格
   html = html.replace(/\|(.+)\|/g, (match) => {
     const cells = match.split('|').filter(c => c.trim());
     return '<tr>' + cells.map(c => {
       const trimmed = c.trim();
       if (trimmed.match(/^[-:]+$/)) return '';
-      return `<td style="padding:4px 12px;border:1px solid var(--img-frame);font-size:12px;color:var(--text-secondary);">${trimmed}</td>`;
+      return '<td>' + trimmed + '</td>';
     }).join('') + '</tr>';
   });
-  html = html.replace(/(<tr>.*<\/tr>\n?)+/g, (match) => {
-    return '<table style="border-collapse:collapse;margin:8px 0;width:100%;">' + match + '</table>';
-  });
+  html = html.replace(/(<tr>.*<\/tr>\n?)+/g, '<table>$&</table>');
   return html;
 }
 
