@@ -157,7 +157,7 @@ body {
   align-items: flex-start;
 }
 .masthead-logo {
-  height: clamp(64px, 9vw, 120px);
+  height: clamp(192px, 27vw, 360px);
   width: auto;
   display: block;
   margin-bottom: var(--s-sm);
