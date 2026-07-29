@@ -156,6 +156,15 @@ body {
   flex-direction: column;
   align-items: flex-start;
 }
+.masthead-logo {
+  height: 44px;
+  width: auto;
+  display: block;
+  margin-bottom: var(--s-sm);
+  /* 暗色画布优化：轻微提亮logo */
+  filter: brightness(1.05) contrast(1.02);
+}
+/* 保留wordmark类作fallback */
 .masthead-wordmark {
   font-family: var(--font-display);
   font-size: clamp(48px, 7vw, 90px);
@@ -932,6 +941,7 @@ body {
 }
 @media (max-width: 768px) {
   .masthead { padding: var(--s-lg) var(--s-lg) 0; }
+  .masthead-logo { height: 36px; }
   .masthead-wordmark { font-size: clamp(36px, 10vw, 60px); }
   .masthead-nav { flex-wrap: wrap; }
   .masthead-nav .nav-item { padding: 8px 14px; font-size: 12px; }
@@ -943,6 +953,7 @@ body {
   .tab { padding: 7px 12px; font-size: 12px; }
 }
 @media (max-width: 480px) {
+  .masthead-logo { height: 30px; }
   .genre-grid { flex-direction: column; }
   .masthead-wordmark { font-size: 32px; }
   .masthead-nav .nav-item { font-size: 11px; padding: 6px 10px; }

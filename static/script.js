@@ -322,6 +322,14 @@ function updateLangUI() {
       el.placeholder = dict[key];
     }
   });
+
+  // 更新 logo alt 文本
+  document.querySelectorAll('[data-i18n-alt]').forEach(el => {
+    const key = el.getAttribute('data-i18n-alt');
+    if (dict[key]) {
+      el.alt = dict[key];
+    }
+  });
 }
 
 function t(key) {
